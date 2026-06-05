@@ -1,0 +1,183 @@
+/* PlayerCard */
+.player-card {
+  width: 180px;
+  padding: var(--space-lg);
+  border-radius: var(--radius-xl);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  transition: all var(--transition-base);
+}
+
+.player-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Avatar section */
+.player-card-avatar-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.player-card-avatar-ring {
+  padding: 2px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+}
+
+.player-card-avatar-ring.online {
+  background: var(--accent-primary);
+}
+
+.player-card-avatar-ring.offline {
+  background: var(--border-color);
+}
+
+.player-card-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  border: 2px solid var(--bg-primary);
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.player-card-avatar-placeholder {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--bg-primary);
+  background: var(--btn-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--btn-text);
+  font-size: var(--font-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+.player-card-online-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--online);
+  border: 2px solid var(--bg-primary);
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+}
+
+/* Name */
+.player-card-name {
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  text-align: center;
+  line-height: var(--line-height-tight);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Distance */
+.player-card-distance {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-xs);
+  color: var(--text-tertiary);
+}
+
+.player-card-distance svg {
+  flex-shrink: 0;
+}
+
+/* Sports chips */
+.player-card-sports {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  justify-content: center;
+}
+
+.player-card-sport-chip {
+  padding: 2px var(--space-sm);
+  font-size: 10px;
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  background: var(--bg-badge);
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+/* Skill badge */
+.player-card-skill {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-xs) var(--space-md);
+  font-size: var(--font-xs);
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-full);
+}
+
+.player-card-skill.skill-beginner {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.player-card-skill.skill-intermediate {
+  background: var(--bg-badge);
+  color: var(--text-primary);
+}
+
+.player-card-skill.skill-advanced {
+  background: rgba(233, 220, 190, 0.15);
+  color: var(--text-primary);
+  border: 1px solid var(--border-accent);
+}
+
+.player-card-skill.skill-pro {
+  background: var(--accent-primary);
+  color: var(--btn-text);
+}
+
+/* Connect button */
+.player-card-connect {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-xs);
+  font-weight: var(--font-weight-medium);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.player-card-connect:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-accent);
+  color: var(--text-primary);
+}
+
+.player-card-connect:active {
+  transform: scale(0.96);
+}

@@ -1,0 +1,97 @@
+/* ComingSoon */
+.coming-soon {
+  padding: var(--space-2xl);
+  border-radius: var(--radius-2xl);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-lg);
+}
+
+.coming-soon-emoji {
+  font-size: 40px;
+  line-height: 1;
+}
+
+.coming-soon.compact .coming-soon-emoji {
+  font-size: 28px;
+}
+
+.coming-soon-title {
+  font-size: var(--font-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  line-height: var(--line-height-tight);
+}
+
+.coming-soon.compact .coming-soon-title {
+  font-size: var(--font-md);
+}
+
+.coming-soon-desc {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  line-height: var(--line-height-relaxed);
+  max-width: 320px;
+}
+
+/* Feature list */
+.coming-soon-features {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-sm) var(--space-lg);
+  list-style: none;
+  padding: 0;
+  margin: var(--space-sm) 0;
+}
+
+.coming-soon-feature {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+.coming-soon-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gradient-primary);
+  flex-shrink: 0;
+}
+
+/* CTA */
+.coming-soon-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md) var(--space-3xl);
+  background: var(--gradient-primary);
+  background-size: 200% 200%;
+  color: #fff;
+  font-family: var(--font-family);
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-semibold);
+  border: none;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-button);
+  animation: gradientShift 4s ease infinite;
+}
+
+.coming-soon-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-fab);
+}
+
+.coming-soon-cta:active {
+  transform: translateY(0) scale(0.97);
+}

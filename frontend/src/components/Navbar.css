@@ -1,0 +1,138 @@
+/* ====================================================
+   Navbar.css – Fixed Bottom Navigation Bar
+   ZENEX Mobile App
+   ==================================================== */
+
+.bottom-navbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 86px;
+  background: var(--bg-nav);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-top: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-nav);
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom, 14px);
+  padding-top: 10px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px;
+  margin-bottom: 4px;
+}
+
+.navbar-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.navbar-app-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.navbar-content {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: 100%;
+  padding: 0 var(--space-sm);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary); /* Inactive Navigation is #8E8B82 in both modes */
+  opacity: 0.85;
+  cursor: pointer;
+  padding: var(--space-xs) 0;
+  width: 18%;
+  transition: color var(--transition-fast), transform var(--transition-fast), opacity var(--transition-fast);
+  position: relative;
+  box-sizing: border-box;
+}
+
+.nav-item:active {
+  transform: scale(0.96);
+}
+
+.icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.nav-icon {
+  transition: transform var(--transition-base), stroke var(--transition-base);
+  stroke-width: 2px;
+}
+
+.nav-item.active {
+  opacity: 1;
+  color: var(--text-primary); /* #343434 in Light Mode */
+}
+
+.nav-item.active .nav-icon {
+  stroke: var(--text-primary);
+  transform: translateY(-2px);
+}
+
+[data-theme="dark"] .nav-item.active {
+  color: var(--accent-primary); /* #E9DCBE in Dark Mode */
+}
+
+[data-theme="dark"] .nav-item.active .nav-icon {
+  stroke: var(--accent-primary);
+  filter: none;
+}
+
+.active-dot {
+  position: absolute;
+  bottom: -6px;
+  width: 4px;
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--accent-primary);
+  animation: scaleIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.nav-label {
+  font-size: var(--font-xs);
+  font-weight: var(--font-weight-medium);
+  transition: color var(--transition-fast), font-weight var(--transition-fast);
+}
+
+.nav-item.active .nav-label {
+  color: inherit;
+  font-weight: var(--font-weight-semibold);
+}
+
+@media (min-width: 768px) {
+  .bottom-navbar {
+    display: none;
+  }
+}

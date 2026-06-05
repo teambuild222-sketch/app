@@ -1,0 +1,157 @@
+/* EventCard */
+.event-card {
+  width: 260px;
+  border-radius: var(--radius-xl);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  transition: all var(--transition-base);
+  cursor: pointer;
+}
+
+.event-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.event-card.event-card-full {
+  width: 100%;
+}
+
+/* Image area */
+.event-card-image {
+  position: relative;
+  height: 180px;
+  overflow: hidden;
+}
+
+.event-card-image-bg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.event-card-image-placeholder {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-tertiary);
+}
+
+/* Category badge overlay */
+.event-card-category {
+  position: absolute;
+  top: var(--space-md);
+  left: var(--space-md);
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-xs) var(--space-md);
+  font-size: var(--font-xs);
+  font-weight: var(--font-weight-semibold);
+  color: #fff;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--radius-full);
+}
+
+/* Bottom content */
+.event-card-content {
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.event-card-title {
+  font-size: var(--font-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  line-height: var(--line-height-tight);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event-card-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+}
+
+.event-card-info svg {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+}
+
+/* Bottom row */
+.event-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-sm);
+}
+
+/* Attendee avatar stack */
+.event-card-attendees {
+  display: flex;
+  align-items: center;
+}
+
+.event-card-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--bg-card-solid);
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  overflow: hidden;
+}
+
+.event-card-avatar:not(:first-child) {
+  margin-left: -8px;
+}
+
+.event-card-avatar-count {
+  background: var(--accent-purple-light);
+  color: var(--accent-purple);
+  font-size: 9px;
+}
+
+/* Small RSVP button */
+.event-card-rsvp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  font-family: var(--font-family);
+  font-size: var(--font-xs);
+  font-weight: var(--font-weight-semibold);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-button);
+}
+
+.event-card-rsvp:hover {
+  background: var(--btn-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-fab);
+}
+
+.event-card-rsvp:active {
+  transform: translateY(0) scale(0.96);
+}
