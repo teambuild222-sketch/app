@@ -1224,7 +1224,7 @@
 }
 
 .chat-conversation-box {
-  display: none; /* hidden on mobile chat list, visible on larger chat screens or active toggle */
+  display: flex;
   flex-direction: column;
   background: var(--bg-secondary);
 }
@@ -1681,6 +1681,10 @@
     padding-left: 16px;
     padding-right: 16px;
     padding-bottom: calc(var(--nav-height) + 16px);
+  }
+
+  .chat-layout-container {
+    height: auto;
   }
 
   .zenex-sidebar {

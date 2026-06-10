@@ -31,22 +31,8 @@ export const AuthLayout: React.FC<AuthLayoutProps> = () => {
       <div className="ios-bg-gradient-blob blob-purple" />
       <div className="ios-bg-gradient-blob blob-pink" />
 
-      <div className="ios-auth-container">
-        <div className="ios-auth-card glass-card">
-          <div className="ios-auth-card-header">
-            <div>
-              <div className="auth-header-logo-container">
-                <img src="/logo.png" alt="ZENEX Logo" className="auth-header-logo" />
-              </div>
-              <p className="auth-logo-label">ZENEX</p>
-              <h1 className="auth-welcome-title">Welcome to Zenex</h1>
-              <p className="auth-welcome-copy">A modern social experience for sports, events, and communities.</p>
-            </div>
-            <button type="button" className="auth-theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
-              {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-            </button>
-          </div>
-
+      <div className={`ios-auth-container ${activeTab === 'signup' ? 'signup-mode' : ''}`}>
+        <div className={`ios-auth-card glass-card ${activeTab === 'signup' ? 'signup-card' : ''}`}>
           <div className="ios-segmented-control-wrapper auth-tabs">
             <div className={`ios-segmented-indicator ${activeTab === 'signup' ? 'right' : 'left'}`} />
             <button

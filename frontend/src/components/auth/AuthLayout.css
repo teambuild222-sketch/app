@@ -1,7 +1,7 @@
 /* AuthLayout.css - Responsive card-based auth experience */
 
 .ios-auth-shell {
-  width: 100vw;
+  width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
@@ -9,7 +9,9 @@
   align-items: center;
   background: var(--bg-primary);
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 24px 0;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   transition: background-color var(--transition-theme) ease;
 }
@@ -57,6 +59,12 @@
   z-index: 10;
 }
 
+.ios-auth-container.signup-mode {
+  width: min(100%, 1400px);
+  max-width: 1400px;
+  padding: 24px;
+}
+
 .ios-auth-card {
   background: var(--bg-card);
   border: 1px solid var(--glass-border);
@@ -68,6 +76,34 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+}
+
+.ios-auth-card.signup-card {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+@media (max-width: 1080px) {
+  .ios-auth-container.signup-mode {
+    width: min(100%, 760px);
+  }
+
+  .ios-auth-card.signup-card {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .ios-auth-container.signup-mode {
+    padding: 16px;
+  }
+
+  .ios-auth-card.signup-card {
+    padding: 20px;
+  }
 }
 
 .ios-auth-card-header {

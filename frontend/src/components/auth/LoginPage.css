@@ -16,16 +16,66 @@
 
 [data-theme="dark"] {
   --ios-bg-system: #000000;
-  --ios-bg-card: rgba(28, 28, 30, 0.6);
+  --ios-bg-card: rgba(58, 58, 60, 0.78);
   --ios-primary: #0A84FF;
   --ios-secondary: #BF5AF2;
   --ios-accent: #FF375F;
   --ios-text-primary: #FFFFFF;
-  --ios-text-secondary: #E5E5EA;
-  --ios-text-tertiary: #8E8E93;
-  --ios-border: rgba(255, 255, 255, 0.1);
+  --ios-text-secondary: #98989D;
+  --ios-text-tertiary: #98989D;
+  --ios-border: rgba(56, 56, 58, 0.9);
   --ios-input-bg: rgba(255, 255, 255, 0.06);
-  --ios-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  --ios-shadow: 0 20px 45px rgba(0, 0, 0, 0.55);
+}
+
+[data-theme="dark"] .ios-auth-card-body {
+  background: transparent;
+}
+
+[data-theme="dark"] .ios-input-wrapper {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .ios-input-wrapper:focus-within {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(10, 132, 255, 0.45);
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.18);
+}
+
+[data-theme="dark"] .ios-clear-btn {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+[data-theme="dark"] .ios-primary-btn {
+  background: #0A84FF;
+  color: #FFFFFF;
+  box-shadow: 0 10px 28px rgba(10, 132, 255, 0.28);
+}
+
+[data-theme="dark"] .ios-social-btn.apple-btn,
+[data-theme="dark"] .ios-social-btn.google-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .ios-social-btn.apple-btn:hover,
+[data-theme="dark"] .ios-social-btn.google-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .ios-social-list {
+  gap: 12px;
+}
+
+[data-theme="dark"] .ios-divider span {
+  color: #98989D;
+}
+
+[data-theme="dark"] .ios-text-link {
+  color: #0A84FF;
 }
 
 /* Logo Container */
@@ -202,11 +252,11 @@
   color: var(--ios-text-primary);
 }
 
-/* Links and Face ID row */
+/* Links row */
 .ios-links-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   margin-top: 2px;
   margin-bottom: 8px;
 }
@@ -221,35 +271,6 @@
 
 .ios-text-link:hover {
   opacity: 0.85;
-}
-
-.ios-faceid-trigger-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--ios-primary);
-  transition: transform 0.2s, opacity 0.2s;
-}
-
-.ios-faceid-trigger-btn:hover {
-  opacity: 0.85;
-}
-
-.ios-faceid-trigger-btn:active {
-  transform: scale(0.95);
-}
-
-.ios-faceid-icon-badge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--ios-primary);
 }
 
 /* Large Blue Primary iOS Button */
@@ -452,83 +473,3 @@
   margin-bottom: 16px;
 }
 
-/* Face ID Verification Overlay */
-.ios-faceid-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 99;
-  border-radius: inherit;
-}
-
-.ios-faceid-modal {
-  background: var(--bg-card-solid);
-  border-radius: 24px;
-  padding: 24px;
-  width: 170px;
-  height: 170px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-  border: 1px solid var(--ios-border);
-}
-
-.ios-faceid-glyph-wrapper {
-  position: relative;
-  width: 70px;
-  height: 70px;
-  color: var(--ios-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.ios-faceid-ring {
-  position: absolute;
-  inset: -4px;
-  border: 3.5px solid transparent;
-  border-top-color: var(--ios-primary);
-  border-radius: 50%;
-}
-
-.ios-faceid-glyph-wrapper.scanning .ios-faceid-ring {
-  animation: spin 1s linear infinite;
-}
-
-.ios-faceid-glyph-wrapper.success {
-  color: var(--success);
-}
-
-.ios-faceid-glyph-wrapper.success .ios-faceid-ring {
-  border-color: var(--success);
-  transform: scale(1.05);
-  opacity: 0;
-  transition: transform 0.3s ease, opacity 0.3s ease;
-}
-
-.ios-faceid-glyph {
-  width: 54px;
-  height: 54px;
-  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.ios-faceid-glyph-wrapper.success .ios-faceid-glyph {
-  transform: scale(1.1);
-}
-
-.ios-faceid-status-text {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--ios-text-primary);
-}

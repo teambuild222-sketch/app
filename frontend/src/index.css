@@ -36,7 +36,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  overflow: hidden; /* Prevent whole page scrolling */
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* ---------- App Container ---------- */
