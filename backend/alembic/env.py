@@ -46,8 +46,20 @@ def do_run_migrations(connection: Connection) -> None:
         context.run_migrations()
 
 
+def _engine_connect_args() -> dict:
+    if settings.database_url.startswith("sqlite"):
+        return {"check_same_thread": False}
+    if settings.database_url.startswith("postgresql"):
+        return {"ssl": True}
+    return {}
+
+
 async def run_migrations_online() -> None:
-    connectable = create_async_engine(settings.database_url, poolclass=pool.NullPool)
+    connectable = create_async_engine(
+        settings.database_url,
+        poolclass=pool.NullPool,
+        connect_args=_engine_connect_args(),
+    )
 
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)

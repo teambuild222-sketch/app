@@ -12,8 +12,12 @@ from app.config import get_settings
 
 settings = get_settings()
 
-# SQLite needs this connect_arg for use with FastAPI's threaded/async setup.
-_connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
+# SQLite: threaded/async dev. Postgres (Supabase/Neon): SSL required from cloud hosts (e.g. Render).
+_connect_args: dict = {}
+if settings.database_url.startswith("sqlite"):
+    _connect_args["check_same_thread"] = False
+elif settings.database_url.startswith("postgresql"):
+    _connect_args["ssl"] = True
 
 engine = create_async_engine(settings.database_url, echo=False, connect_args=_connect_args)
 
