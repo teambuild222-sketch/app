@@ -72,7 +72,7 @@
   box-sizing: border-box;
 }
 
-html.zenex-mobile-app .profile-page {
+html.simsor-mobile-app .profile-page {
   min-height: calc(100dvh - 44px - 80px - 32px);
   --profile-half-max: calc((100dvh - 44px - 80px - 32px) * 0.5);
 }

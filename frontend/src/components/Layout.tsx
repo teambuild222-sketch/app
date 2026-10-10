@@ -50,7 +50,7 @@ export const Layout: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const [mapEventScope, setMapEventScope] = useState<MapEventScope>(() => {
     try {
-      return localStorage.getItem('zenex-map-event-scope') === 'private' ? 'private' : 'public';
+      return localStorage.getItem('simsor-map-event-scope') === 'private' ? 'private' : 'public';
     } catch {
       return 'public';
     }
@@ -70,16 +70,16 @@ export const Layout: React.FC = () => {
   // Membership states
   const [membershipPlan, setMembershipPlan] = useState<PlanType>(getSavedPlan);
   const [isMembershipOpen, setIsMembershipOpen] = useState(false);
-  const [fullName, setFullName] = useState(() => localStorage.getItem('zenex-fullname') || 'Katakam Ritvik');
-  const [avatar, setAvatar] = useState(() => localStorage.getItem('zenex-avatar') || 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&h=300&q=80');
+  const [fullName, setFullName] = useState(() => localStorage.getItem('simsor-fullname') || 'Katakam Ritvik');
+  const [avatar, setAvatar] = useState(() => localStorage.getItem('simsor-avatar') || 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&h=300&q=80');
 
   useEffect(() => {
     // If not set yet, store default Katakam Ritvik so it matches screenshot
-    if (!localStorage.getItem('zenex-fullname')) {
-      localStorage.setItem('zenex-fullname', 'Katakam Ritvik');
+    if (!localStorage.getItem('simsor-fullname')) {
+      localStorage.setItem('simsor-fullname', 'Katakam Ritvik');
     }
-    if (!localStorage.getItem('zenex-avatar')) {
-      localStorage.setItem('zenex-avatar', 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&h=300&q=80');
+    if (!localStorage.getItem('simsor-avatar')) {
+      localStorage.setItem('simsor-avatar', 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&h=300&q=80');
     }
   }, []);
 
@@ -88,8 +88,8 @@ export const Layout: React.FC = () => {
       setMembershipPlan(getSavedPlan());
     };
     const handleProfileChange = () => {
-      setFullName(localStorage.getItem('zenex-fullname') || 'Katakam Ritvik');
-      setAvatar(localStorage.getItem('zenex-avatar') || 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&h=300&q=80');
+      setFullName(localStorage.getItem('simsor-fullname') || 'Katakam Ritvik');
+      setAvatar(localStorage.getItem('simsor-avatar') || 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&h=300&q=80');
     };
     
     window.addEventListener(PLAN_CHANGE_EVENT, handlePlanChange);
@@ -149,7 +149,7 @@ export const Layout: React.FC = () => {
   }, [activeTab]);
 
   useEffect(() => {
-    localStorage.setItem('zenex-map-event-scope', mapEventScope);
+    localStorage.setItem('simsor-map-event-scope', mapEventScope);
   }, [mapEventScope]);
 
   // Posts themselves come from `feedSource.ts` (real /api/posts once a backend
@@ -223,7 +223,7 @@ export const Layout: React.FC = () => {
 
   return (
     <div
-      className={`zenex-app-shell ${activeTab === 'explore' ? 'explore-active' : ''} ${
+      className={`simsor-app-shell ${activeTab === 'explore' ? 'explore-active' : ''} ${
         activeTab === 'chat' ? 'chat-active' : ''
       } ${
         activeTab === 'home' || activeTab === 'discover' || activeTab === 'chat' || activeTab === 'profile'
@@ -233,12 +233,12 @@ export const Layout: React.FC = () => {
     >
       {/* Fixed Header — hidden on Profile and Explore */}
       {activeTab !== 'explore' && activeTab !== 'profile' && (
-        <header className="zenex-header">
-          <div className="zenex-header-start" aria-hidden="true" />
+        <header className="simsor-header">
+          <div className="simsor-header-start" aria-hidden="true" />
 
-          <div className="zenex-header-center">
+          <div className="simsor-header-center">
             <p
-              className="zenex-app-title"
+              className="simsor-app-title"
               onClick={() => handleTabChange('home')}
               style={{ cursor: 'pointer' }}
               role="button"
@@ -251,7 +251,7 @@ export const Layout: React.FC = () => {
             </p>
           </div>
 
-          <div className="zenex-header-actions">
+          <div className="simsor-header-actions">
             <button
               type="button"
               className="sidebar-toggle-btn"
@@ -301,7 +301,7 @@ export const Layout: React.FC = () => {
                           <Sparkles size={14} className="premium-bar-icon" />
                           <div className="premium-bar-content">
                             <span className="premium-bar-title">
-                              {membershipPlan === 'FREE' ? 'Zenex Gold / Silver' : `Zenex ${membershipPlan}`}
+                              {membershipPlan === 'FREE' ? 'Simsor Gold / Silver' : `Simsor ${membershipPlan}`}
                             </span>
                             <span className="premium-bar-subtitle">
                               {membershipPlan === 'FREE' ? 'Upgrade to Premium' : 'Manage Subscription'}
@@ -336,9 +336,9 @@ export const Layout: React.FC = () => {
                           <HelpCircle size={16} />
                           <span>Help & Support</span>
                         </button>
-                        <button className="settings-option" onClick={() => { setIsSettingsOpen(false); alert('About Zenex clicked'); }}>
+                        <button className="settings-option" onClick={() => { setIsSettingsOpen(false); alert('About Simsor clicked'); }}>
                           <Info size={16} />
-                          <span>About Zenex</span>
+                          <span>About Simsor</span>
                         </button>
                         <div className="settings-dropdown-divider" />
                         <button className="settings-option logout-option" onClick={handleLogout}>
@@ -356,22 +356,22 @@ export const Layout: React.FC = () => {
       )}
 
       {/* Main Responsive Grid Layout */}
-      <div className={`zenex-layout-grid ${activeTab === 'explore' ? 'explore-layout-grid' : ''} ${isSidebarOpen ? 'sidebar-expanded' : 'sidebar-collapsed'}`}>
+      <div className={`simsor-layout-grid ${activeTab === 'explore' ? 'explore-layout-grid' : ''} ${isSidebarOpen ? 'sidebar-expanded' : 'sidebar-collapsed'}`}>
         
         {/* Left Sidebar */}
-        <aside className={`zenex-sidebar ${activeTab === 'explore' ? 'explore-sidebar-floating' : ''} ${isSidebarOpen ? 'expanded' : 'collapsed'}`}>
-          <div className="zenex-sidebar-inner">
+        <aside className={`simsor-sidebar ${activeTab === 'explore' ? 'explore-sidebar-floating' : ''} ${isSidebarOpen ? 'expanded' : 'collapsed'}`}>
+          <div className="simsor-sidebar-inner">
             {/* Sidebar Branding (Only on Desktop when expanded) */}
-            <div className="zenex-sidebar-brand">
-              <img src="/logo.png" alt="ZENEX" className="zenex-sidebar-logo-img" />
-              <span className="zenex-sidebar-logo-text">ZENEX</span>
+            <div className="simsor-sidebar-brand">
+              <img src="/logo.png" alt="SIMSOR" className="simsor-sidebar-logo-img" />
+              <span className="simsor-sidebar-logo-text">SIMSOR</span>
             </div>
 
-            <div className="zenex-sidebar-title">
+            <div className="simsor-sidebar-title">
               <span>MENU</span>
             </div>
 
-            <nav className="zenex-nav-links">
+            <nav className="simsor-nav-links">
               <button
                 className={`sidebar-nav-item ${activeTab === 'explore' ? 'active' : ''}`}
                 onClick={() => setActiveTab('explore')}
@@ -418,9 +418,9 @@ export const Layout: React.FC = () => {
               </button>
             </nav>
 
-            <div className="zenex-sidebar-divider" />
+            <div className="simsor-sidebar-divider" />
 
-            <div className="zenex-sidebar-utilities">
+            <div className="simsor-sidebar-utilities">
               <button
                 className="sidebar-nav-item"
                 onClick={() => setIsNotificationsOpen(true)}
@@ -448,7 +448,7 @@ export const Layout: React.FC = () => {
         </aside>
 
         {/* Main Panel Viewport */}
-        <main className="zenex-main-panel">
+        <main className="simsor-main-panel">
           
           {/* EXPLORE PAGE */}
           {activeTab === 'explore' && (
@@ -562,7 +562,7 @@ export const Layout: React.FC = () => {
         </main>
 
         {/* Right Panel (Visible on Desktop >1024px) */}
-        <aside className="zenex-right-panel">
+        <aside className="simsor-right-panel">
           
           {/* Membership Desktop Card */}
           <div className="glass-card right-panel-card membership-desktop-card">

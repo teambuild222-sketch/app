@@ -513,14 +513,14 @@ const doc = new Document({
         numbered('Add FCM, geolocation, and camera plugins.', 'w4'),
         numbered('Closed testing on Play (internal track) + TestFlight.', 'w4'),
         numbered('Add Sentry and PostHog.', 'w4'),
-        numbered('Start migrating zenex-* localStorage keys to simsor-* with a first-launch migration.', 'w4'),
+        numbered('Start migrating simsor-* localStorage keys to simsor-* with a first-launch migration.', 'w4'),
 
         // ============ 10. CLEANUP ============
         h1('10. Repo Cleanup'),
         bullet('Remove unused paid dependencies (Mapbox, Google Maps) until actually needed — smaller bundles, faster builds.'),
-        bullet('Keep only backend/app/main.py; archive the legacy backend/main.py (ZENEX hello-world).'),
+        bullet('Keep only backend/app/main.py; archive the legacy backend/main.py (SIMSOR hello-world).'),
         bullet('Adopt React Query instead of adding more localStorage stores.'),
-        bullet('Do one branding pass: zenex-* keys → simsor-* with a migration on first launch.'),
+        bullet('Do one branding pass: simsor-* keys → simsor-* with a migration on first launch.'),
 
         // ============ SUMMARY ============
         h1('Summary'),

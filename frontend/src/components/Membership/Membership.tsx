@@ -66,16 +66,16 @@ export const PLANS: Record<PlanType, PlanDetails> = {
 };
 
 // Custom event name for syncing plan state
-export const PLAN_CHANGE_EVENT = 'zenex-plan-changed';
+export const PLAN_CHANGE_EVENT = 'simsor-plan-changed';
 
 export const getSavedPlan = (): PlanType => {
-  const plan = localStorage.getItem('zenex-membership-plan');
+  const plan = localStorage.getItem('simsor-membership-plan');
   if (plan === 'PLUS' || plan === 'PRO') return plan;
   return 'FREE';
 };
 
 export const savePlan = (plan: PlanType) => {
-  localStorage.setItem('zenex-membership-plan', plan);
+  localStorage.setItem('simsor-membership-plan', plan);
   window.dispatchEvent(new Event(PLAN_CHANGE_EVENT));
 };
 
@@ -121,7 +121,7 @@ export const MembershipModal: React.FC<MembershipModalProps> = ({ isOpen, onClos
         <div className="membership-modal-header">
           <div className="membership-header-badge">
             <Sparkles size={16} />
-            <span>ZENEX PREMIUM</span>
+            <span>SIMSOR PREMIUM</span>
           </div>
           <h2>Level Up Your Experience</h2>
           <p>Choose the perfect plan to connect, play, and experience local events near you.</p>

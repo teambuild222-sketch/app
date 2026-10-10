@@ -80,16 +80,16 @@
   transform: scale(0.96);
 }
 
-/* Hide nav island while profile sheets are open — must beat zenex-mobile-app flex rules */
-html.zenex-mobile-app.profile-sheet-open .bottom-navbar,
+/* Hide nav island while profile sheets are open — must beat simsor-mobile-app flex rules */
+html.simsor-mobile-app.profile-sheet-open .bottom-navbar,
 html.profile-sheet-open .bottom-navbar,
-html.zenex-mobile-app.profile-sheet-open .bottom-navbar-stack,
+html.simsor-mobile-app.profile-sheet-open .bottom-navbar-stack,
 html.profile-sheet-open .bottom-navbar-stack,
-html.zenex-mobile-app.profile-sheet-open .navbar-island,
+html.simsor-mobile-app.profile-sheet-open .navbar-island,
 html.profile-sheet-open .navbar-island,
-html.zenex-mobile-app.profile-sheet-open .navbar-scope-island,
+html.simsor-mobile-app.profile-sheet-open .navbar-scope-island,
 html.profile-sheet-open .navbar-scope-island,
-html.zenex-mobile-app.edit-profile-open .bottom-navbar,
+html.simsor-mobile-app.edit-profile-open .bottom-navbar,
 html.edit-profile-open .bottom-navbar {
   display: none !important;
   visibility: hidden !important;
@@ -263,7 +263,7 @@ html.edit-profile-open .bottom-navbar {
   transform: none;
 }
 
-html.zenex-mobile-app .bottom-navbar,
+html.simsor-mobile-app .bottom-navbar,
 .mobile-app-mode .bottom-navbar {
   display: flex !important;
 }

@@ -1,6 +1,6 @@
 /**
  * Follow graph API facade (Phase 3) — replaces the localStorage
- * `zenex-following-v1` store. See components/HomeFeed/feedAlgorithm.ts for
+ * `simsor-following-v1` store. See components/HomeFeed/feedAlgorithm.ts for
  * the stale-while-revalidate cache that lets synchronous feed scoring keep
  * working against this async data.
  */

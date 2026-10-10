@@ -11,7 +11,7 @@ export async function requestDabUp(userId: string): Promise<DabUpStatus> {
   if (isBackendEnabled()) {
     const res = await apiPost<{ status: DabUpStatus }>(API_ROUTES.dabUpRequest, { userId });
     await hydrateDabUps();
-    window.dispatchEvent(new CustomEvent('zenex-dabups-changed'));
+    window.dispatchEvent(new CustomEvent('simsor-dabups-changed'));
     return res.status;
   }
   sendDabUpRequest(userId);

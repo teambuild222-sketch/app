@@ -1,6 +1,6 @@
 """POST/DELETE /api/follows/:userId + GET /api/follows/mine — Phase 3.
 
-Ports the client's `zenex-following-v1` localStorage store
+Ports the client's `simsor-following-v1` localStorage store
 (frontend/src/components/HomeFeed/feedAlgorithm.ts) to a real, shared graph."""
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select

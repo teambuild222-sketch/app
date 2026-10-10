@@ -35,8 +35,8 @@ export type DabUpStatus = 'none' | 'pending' | 'dabbed_up';
 // 'connected' kept as a legacy alias for previously stored relationships.
 type StoredDabStatus = 'pending' | 'dabbed_up' | 'connected';
 
-const DAB_UPS_KEY = 'zenex-dabups-v1';
-export const DAB_UPS_CHANGED_EVENT = 'zenex-dabups-changed';
+const DAB_UPS_KEY = 'simsor-dabups-v1';
+export const DAB_UPS_CHANGED_EVENT = 'simsor-dabups-changed';
 
 function loadDabStore(): Record<string, StoredDabStatus> {
   try {
@@ -128,7 +128,7 @@ export function getBoostingCount(): number {
    3. EVENTS JOINED (attended) + CATEGORY BREAKDOWN
    ============================================================ */
 
-const JOINED_KEY = 'zenex-joined-v1';
+const JOINED_KEY = 'simsor-joined-v1';
 
 function getJoinedEventIds(): string[] {
   try {
@@ -329,8 +329,8 @@ export function getAchievements(): AchievementProgress[] {
    7. PROFILE INTEREST TAGS (user_tags equivalent)
    ============================================================ */
 
-const USER_TAGS_KEY = 'zenex-user-tags-v1';
-export const USER_TAGS_CHANGED_EVENT = 'zenex-user-tags-changed';
+const USER_TAGS_KEY = 'simsor-user-tags-v1';
+export const USER_TAGS_CHANGED_EVENT = 'simsor-user-tags-changed';
 
 export function getUserTags(): string[] {
   try {
@@ -343,8 +343,8 @@ export function getUserTags(): string[] {
     // fall through to seed below
   }
   // Seed from existing interests so profiles aren't empty for current users.
-  const sports: string[] = JSON.parse(localStorage.getItem('zenex-sports') || '[]');
-  const ent: string[] = JSON.parse(localStorage.getItem('zenex-ent') || '[]');
+  const sports: string[] = JSON.parse(localStorage.getItem('simsor-sports') || '[]');
+  const ent: string[] = JSON.parse(localStorage.getItem('simsor-ent') || '[]');
   const seeded = [...sports, ...ent]
     .map((label) => label.toLowerCase().replace(/\s+/g, '-'))
     .filter((id) => id in TAG_BY_ID)

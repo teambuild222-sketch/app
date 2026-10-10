@@ -16,14 +16,14 @@ export async function fetchProfile(): Promise<UserProfile> {
 export async function saveProfile(patch: Partial<UserProfile>): Promise<UserProfile> {
   if (isBackendEnabled()) {
     const updated = await apiPatch<UserProfile>(API_ROUTES.updateMe, patch);
-    if (updated.fullName) localStorage.setItem('zenex-fullname', updated.fullName);
-    if (updated.username) localStorage.setItem('zenex-username', updated.username);
-    if (updated.bio != null) localStorage.setItem('zenex-bio', updated.bio);
-    if (updated.location != null) localStorage.setItem('zenex-location', updated.location);
-    if (updated.avatarUrl) localStorage.setItem('zenex-avatar', updated.avatarUrl);
-    if (updated.sports) localStorage.setItem('zenex-sports', JSON.stringify(updated.sports));
+    if (updated.fullName) localStorage.setItem('simsor-fullname', updated.fullName);
+    if (updated.username) localStorage.setItem('simsor-username', updated.username);
+    if (updated.bio != null) localStorage.setItem('simsor-bio', updated.bio);
+    if (updated.location != null) localStorage.setItem('simsor-location', updated.location);
+    if (updated.avatarUrl) localStorage.setItem('simsor-avatar', updated.avatarUrl);
+    if (updated.sports) localStorage.setItem('simsor-sports', JSON.stringify(updated.sports));
     if (updated.entertainment) {
-      localStorage.setItem('zenex-ent', JSON.stringify(updated.entertainment));
+      localStorage.setItem('simsor-ent', JSON.stringify(updated.entertainment));
     }
     notifyUserInterestsChanged();
     return updated;
@@ -31,13 +31,13 @@ export async function saveProfile(patch: Partial<UserProfile>): Promise<UserProf
 
   const current = getLocalProfile();
   const next: UserProfile = { ...current, ...patch };
-  localStorage.setItem('zenex-fullname', next.fullName);
-  localStorage.setItem('zenex-username', next.username);
-  localStorage.setItem('zenex-bio', next.bio);
-  localStorage.setItem('zenex-location', next.location);
-  localStorage.setItem('zenex-avatar', next.avatarUrl);
-  localStorage.setItem('zenex-sports', JSON.stringify(next.sports));
-  localStorage.setItem('zenex-ent', JSON.stringify(next.entertainment));
+  localStorage.setItem('simsor-fullname', next.fullName);
+  localStorage.setItem('simsor-username', next.username);
+  localStorage.setItem('simsor-bio', next.bio);
+  localStorage.setItem('simsor-location', next.location);
+  localStorage.setItem('simsor-avatar', next.avatarUrl);
+  localStorage.setItem('simsor-sports', JSON.stringify(next.sports));
+  localStorage.setItem('simsor-ent', JSON.stringify(next.entertainment));
   notifyUserInterestsChanged();
   return next;
 }

@@ -1,7 +1,7 @@
 import { apiDelete, apiGet, apiPost, isBackendEnabled } from './client';
 import { API_ROUTES } from './types';
 
-const JOINED_KEY = 'zenex-joined-v1';
+const JOINED_KEY = 'simsor-joined-v1';
 
 let joinedCache = new Set<string>();
 let hydrated = false;

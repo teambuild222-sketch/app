@@ -13,7 +13,7 @@ import {
   USER_INTERESTS_CHANGED_EVENT,
 } from './profileExploreInterests';
 
-const RECENT_SUBFILTERS_KEY = 'zenex-explore-recent-subfilters';
+const RECENT_SUBFILTERS_KEY = 'simsor-explore-recent-subfilters';
 
 type MainCategory = 'Sports' | 'Entertainment';
 type RecentSubFiltersByMain = Record<MainCategory, string[]>;
@@ -269,7 +269,7 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
   const [peopleListsVersion, setPeopleListsVersion] = useState(0);
   const filterBarRef = useRef<HTMLDivElement>(null);
   const [recentSearches, setRecentSearches] = useState<string[]>(() => {
-    const saved = localStorage.getItem('zenex-recent-searches-v3');
+    const saved = localStorage.getItem('simsor-recent-searches-v3');
     return saved ? JSON.parse(saved) : [];
   });
 
@@ -398,11 +398,11 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
   // by the backend and shouldn't be mirrored into the mock dataset).
   useEffect(() => {
     if (backendEnabled) return;
-    localStorage.setItem('zenex-explore-events-v4', JSON.stringify(events));
+    localStorage.setItem('simsor-explore-events-v4', JSON.stringify(events));
   }, [events, backendEnabled]);
 
   useEffect(() => {
-    localStorage.setItem('zenex-recent-searches-v3', JSON.stringify(recentSearches));
+    localStorage.setItem('simsor-recent-searches-v3', JSON.stringify(recentSearches));
   }, [recentSearches]);
 
   useEffect(() => {
@@ -1121,7 +1121,7 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
                 <h4>Account</h4>
                 <div className="ios-setting-row">
                   <span>Signed in as</span>
-                  <span className="ios-value-text">{localStorage.getItem('zenex-fullname') || 'Zenex Member'}</span>
+                  <span className="ios-value-text">{localStorage.getItem('simsor-fullname') || 'Simsor Member'}</span>
                 </div>
                 <button className="ios-settings-secondary-btn" type="button" onClick={() => alert('Manage Account clicked')}>
                   Manage Account

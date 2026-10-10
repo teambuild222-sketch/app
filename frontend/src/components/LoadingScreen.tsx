@@ -10,7 +10,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ message = 'Loading
     <div className="loading-screen">
       <div className="loading-container">
         <div className="loading-logo-wrapper">
-          <img src="/logo.png" alt="ZENEX Logo" className="loading-logo" />
+          <img src="/logo.png" alt="SIMSOR Logo" className="loading-logo" />
           <div className="loading-spinner">
             <div className="spinner-ring"></div>
           </div>

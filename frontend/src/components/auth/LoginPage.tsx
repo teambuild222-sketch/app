@@ -65,7 +65,7 @@ export const LoginPage: React.FC<LoginPageProps> = () => {
       setTimeout(async () => {
         try {
           await loginWithPassword('admin', 'admin');
-          localStorage.setItem('zenex-fullname', 'Admin User');
+          localStorage.setItem('simsor-fullname', 'Admin User');
           window.location.href = '/';
         } catch {
           setShowFaceIDScan(false);
@@ -76,23 +76,23 @@ export const LoginPage: React.FC<LoginPageProps> = () => {
   };
 
   return (
-    <div className="zenex-login-container">
+    <div className="simsor-login-container">
       {/* Section greeting */}
-      <div className="zenex-card-header">
-        <h2 className="zenex-card-title">Welcome back</h2>
-        <p className="zenex-card-subtitle">Sign in to your Zenex account</p>
+      <div className="simsor-card-header">
+        <h2 className="simsor-card-title">Welcome back</h2>
+        <p className="simsor-card-subtitle">Sign in to your Simsor account</p>
       </div>
 
       {error && (
-        <div className="zenex-auth-error animate-shake">
+        <div className="simsor-auth-error animate-shake">
           <span>{error}</span>
         </div>
       )}
 
       {/* Main Login Form */}
-      <form onSubmit={handleLoginSubmit} className="zenex-login-form">
-        <div className="zenex-field-group">
-          <label className="zenex-field-label" htmlFor="username">
+      <form onSubmit={handleLoginSubmit} className="simsor-login-form">
+        <div className="simsor-field-group">
+          <label className="simsor-field-label" htmlFor="username">
             Username
           </label>
           <div className="ios-input-wrapper">
@@ -127,8 +127,8 @@ export const LoginPage: React.FC<LoginPageProps> = () => {
           </div>
         </div>
 
-        <div className="zenex-field-group">
-          <label className="zenex-field-label" htmlFor="password">
+        <div className="simsor-field-group">
+          <label className="simsor-field-label" htmlFor="password">
             Password
           </label>
           <PasswordInput
@@ -142,10 +142,10 @@ export const LoginPage: React.FC<LoginPageProps> = () => {
         </div>
 
         {/* Quick action row: Forgot password & Face ID */}
-        <div className="zenex-login-helpers">
+        <div className="simsor-login-helpers">
           <button
             type="button"
-            className="zenex-text-link"
+            className="simsor-text-link"
             onClick={() => {
               if (!isBackendEnabled()) {
                 alert('Connect VITE_API_URL to use live password reset.');
@@ -160,12 +160,12 @@ export const LoginPage: React.FC<LoginPageProps> = () => {
 
           <button
             type="button"
-            className="zenex-faceid-pill"
+            className="simsor-faceid-pill"
             onClick={handleFaceIDClick}
             aria-label="Fast sign in with Face ID"
             title="Fast sign in with Face ID"
           >
-            <Scan size={14} className="zenex-faceid-icon" />
+            <Scan size={14} className="simsor-faceid-icon" />
             <span>Face ID</span>
           </button>
         </div>
@@ -173,22 +173,22 @@ export const LoginPage: React.FC<LoginPageProps> = () => {
         {/* Primary Submit Button */}
         <button
           type="submit"
-          className={`zenex-primary-btn ${isLoading ? 'is-loading' : ''}`}
+          className={`simsor-primary-btn ${isLoading ? 'is-loading' : ''}`}
           disabled={isLoading}
         >
           {isLoading ? (
-            <span className="zenex-btn-spinner" />
+            <span className="simsor-btn-spinner" />
           ) : (
             <>
               <span>Sign In</span>
-              <ArrowRight size={17} className="zenex-btn-arrow" />
+              <ArrowRight size={17} className="simsor-btn-arrow" />
             </>
           )}
         </button>
       </form>
 
       {/* Social Divider */}
-      <div className="zenex-divider">
+      <div className="simsor-divider">
         <span>or</span>
       </div>
 
@@ -220,22 +220,22 @@ export const LoginPage: React.FC<LoginPageProps> = () => {
       />
 
       {/* Quick Test Demo chip */}
-      <div className="zenex-demo-quickfill">
-        <button type="button" className="zenex-demo-chip" onClick={handleQuickFill}>
-          <Sparkles size={12} className="zenex-demo-sparkle" />
+      <div className="simsor-demo-quickfill">
+        <button type="button" className="simsor-demo-chip" onClick={handleQuickFill}>
+          <Sparkles size={12} className="simsor-demo-sparkle" />
           <span>Quick fill: admin / admin</span>
         </button>
       </div>
 
       {/* Forgot Password Modal */}
       {forgotOpen && (
-        <div className="zenex-modal-overlay" onClick={() => setForgotOpen(false)}>
-          <div className="zenex-modal-card animate-scaleUp" onClick={(e) => e.stopPropagation()}>
-            <div className="zenex-modal-head">
+        <div className="simsor-modal-overlay" onClick={() => setForgotOpen(false)}>
+          <div className="simsor-modal-card animate-scaleUp" onClick={(e) => e.stopPropagation()}>
+            <div className="simsor-modal-head">
               <h3>Reset Password</h3>
               <button
                 type="button"
-                className="zenex-modal-close"
+                className="simsor-modal-close"
                 onClick={() => setForgotOpen(false)}
                 aria-label="Close"
               >
@@ -243,16 +243,16 @@ export const LoginPage: React.FC<LoginPageProps> = () => {
               </button>
             </div>
 
-            {forgotMessage && <p className="zenex-modal-note">{forgotMessage}</p>}
+            {forgotMessage && <p className="simsor-modal-note">{forgotMessage}</p>}
 
             {!resetToken ? (
-              <div className="zenex-modal-body">
-                <p className="zenex-modal-desc">
+              <div className="simsor-modal-body">
+                <p className="simsor-modal-desc">
                   Enter the email address registered with your account to receive a reset code.
                 </p>
                 <input
                   type="email"
-                  className="zenex-modal-input"
+                  className="simsor-modal-input"
                   placeholder="name@example.com"
                   value={resetEmail}
                   onChange={(e) => setResetEmail(e.target.value)}
@@ -260,7 +260,7 @@ export const LoginPage: React.FC<LoginPageProps> = () => {
                 />
                 <button
                   type="button"
-                  className="zenex-primary-btn"
+                  className="simsor-primary-btn"
                   onClick={() => {
                     if (!resetEmail.trim()) return;
                     void forgotPassword(resetEmail.trim())
@@ -279,24 +279,24 @@ export const LoginPage: React.FC<LoginPageProps> = () => {
                 </button>
               </div>
             ) : (
-              <div className="zenex-modal-body">
+              <div className="simsor-modal-body">
                 <input
                   type="text"
-                  className="zenex-modal-input"
+                  className="simsor-modal-input"
                   placeholder="Reset token"
                   value={resetToken}
                   onChange={(e) => setResetToken(e.target.value)}
                 />
                 <input
                   type="password"
-                  className="zenex-modal-input"
+                  className="simsor-modal-input"
                   placeholder="New password (min 6 chars)"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                 />
                 <button
                   type="button"
-                  className="zenex-primary-btn"
+                  className="simsor-primary-btn"
                   onClick={() => {
                     void resetPassword(resetToken.trim(), newPassword)
                       .then(() => {
@@ -319,13 +319,13 @@ export const LoginPage: React.FC<LoginPageProps> = () => {
 
       {/* Holographic Face ID Scan Overlay */}
       {showFaceIDScan && (
-        <div className="zenex-faceid-overlay" onClick={() => setShowFaceIDScan(false)}>
-          <div className="zenex-faceid-modal animate-scaleUp" onClick={(e) => e.stopPropagation()}>
-            <div className={`zenex-faceid-glyph-wrap ${faceIDSuccess ? 'is-success' : 'is-scanning'}`}>
-              <div className="zenex-faceid-radar" />
-              <Scan size={44} className="zenex-faceid-scan-icon" />
+        <div className="simsor-faceid-overlay" onClick={() => setShowFaceIDScan(false)}>
+          <div className="simsor-faceid-modal animate-scaleUp" onClick={(e) => e.stopPropagation()}>
+            <div className={`simsor-faceid-glyph-wrap ${faceIDSuccess ? 'is-success' : 'is-scanning'}`}>
+              <div className="simsor-faceid-radar" />
+              <Scan size={44} className="simsor-faceid-scan-icon" />
             </div>
-            <p className="zenex-faceid-status">
+            <p className="simsor-faceid-status">
               {faceIDSuccess ? 'Face Verified' : 'Verifying Identity...'}
             </p>
           </div>

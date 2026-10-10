@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title="ZENEX Mobile API", version="1.0.0")
+app = FastAPI(title="SIMSOR Mobile API", version="1.0.0")
 
 # Mobile app origins: Vite dev, Capacitor WebView, and installable PWA
 MOBILE_CORS_ORIGINS = [
@@ -25,7 +25,7 @@ app.add_middleware(
 
 @app.get("/api/message")
 async def read_message() -> dict:
-    return {"message": "Hello from ZENEX mobile backend!"}
+    return {"message": "Hello from SIMSOR mobile backend!"}
 
 
 @app.get("/api/health")

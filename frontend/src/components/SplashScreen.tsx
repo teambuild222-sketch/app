@@ -25,10 +25,10 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ duration = 3000, onC
       <div className="splash-container">
         <div className="splash-content">
           <div className="splash-logo-wrapper">
-            <img src="/logo.png" alt="ZENEX" className="splash-logo" />
+            <img src="/logo.png" alt="SIMSOR" className="splash-logo" />
             <div className="splash-glow"></div>
           </div>
-          <h1 className="splash-title">ZENEX</h1>
+          <h1 className="splash-title">SIMSOR</h1>
           <p className="splash-tagline">Zenith of Nexus</p>
           <p className="splash-description">Your premium sports and entertainment social platform</p>
         </div>

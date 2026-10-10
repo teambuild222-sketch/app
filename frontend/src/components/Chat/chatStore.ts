@@ -35,7 +35,7 @@ import {
   type ChatPresenceState,
 } from '../../lib/chatRealtime';
 
-export const CHAT_STORE_CHANGED = 'zenex-chat-store-changed';
+export const CHAT_STORE_CHANGED = 'simsor-chat-store-changed';
 export const REACTION_EMOJIS = ['❤️', '😂', '😮', '😢', '👏', '🔥'] as const;
 
 export type MessageKind = 'text' | 'post' | 'video' | 'image';
@@ -111,11 +111,11 @@ type StoredConversation = {
   createdAt: number;
 };
 
-const STORE_KEY = 'zenex-chat-store-v2';
-const REACTIONS_KEY = 'zenex-chat-reactions-v1';
-const PINS_KEY = 'zenex-chat-pins-v1';
-const MUTES_KEY = 'zenex-chat-mutes-v1';
-const HIDDEN_KEY = 'zenex-chat-hidden-v1';
+const STORE_KEY = 'simsor-chat-store-v2';
+const REACTIONS_KEY = 'simsor-chat-reactions-v1';
+const PINS_KEY = 'simsor-chat-pins-v1';
+const MUTES_KEY = 'simsor-chat-mutes-v1';
+const HIDDEN_KEY = 'simsor-chat-hidden-v1';
 
 function formatTime(createdAt: number): string {
   const diff = Date.now() - createdAt;

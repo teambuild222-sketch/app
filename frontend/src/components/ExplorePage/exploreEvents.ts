@@ -183,12 +183,12 @@ export const DEFAULT_ME_ACCOUNT = {
 export function getCurrentUserOrganizer(): EventOrganizer {
   return {
     id: ME_AUTHOR_ID,
-    name: localStorage.getItem('zenex-fullname') || DEFAULT_ME_ACCOUNT.name,
-    username: localStorage.getItem('zenex-username') || DEFAULT_ME_ACCOUNT.username,
-    avatar: localStorage.getItem('zenex-avatar') || DEFAULT_ME_ACCOUNT.avatar,
+    name: localStorage.getItem('simsor-fullname') || DEFAULT_ME_ACCOUNT.name,
+    username: localStorage.getItem('simsor-username') || DEFAULT_ME_ACCOUNT.username,
+    avatar: localStorage.getItem('simsor-avatar') || DEFAULT_ME_ACCOUNT.avatar,
     role: 'Host · You',
     bio: '',
-    location: localStorage.getItem('zenex-location') || DEFAULT_ME_ACCOUNT.location,
+    location: localStorage.getItem('simsor-location') || DEFAULT_ME_ACCOUNT.location,
     eventsHosted: 0,
   };
 }
@@ -570,8 +570,8 @@ export function normalizeExploreEvent(
   };
 }
 
-export const EXPLORE_EVENTS_KEY = 'zenex-explore-events-v4';
-export const EXPLORE_EVENTS_CHANGED_EVENT = 'zenex-explore-events-changed';
+export const EXPLORE_EVENTS_KEY = 'simsor-explore-events-v4';
+export const EXPLORE_EVENTS_CHANGED_EVENT = 'simsor-explore-events-changed';
 
 /** Demo events removed from the product – strip from localStorage too. */
 const REMOVED_EVENT_IDS = new Set([
@@ -608,7 +608,7 @@ export function removeExploreEvent(eventId: string): void {
 }
 
 export function loadExploreEvents(): ExploreEvent[] {
-  const saved = localStorage.getItem('zenex-explore-events-v4');
+  const saved = localStorage.getItem('simsor-explore-events-v4');
   if (!saved) return INITIAL_EVENTS;
 
   try {

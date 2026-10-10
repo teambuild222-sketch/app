@@ -33,7 +33,7 @@ export const getNativePlatform = (): 'ios' | 'android' | 'web' => {
  */
 export async function initMobileApp(): Promise<void> {
   const root = document.documentElement;
-  root.classList.add('zenex-mobile-app', 'simsor-mobile-app');
+  root.classList.add('simsor-mobile-app', 'simsor-mobile-app');
   root.dataset.platform = getNativePlatform();
 
   if (isMobileWebDevice()) {

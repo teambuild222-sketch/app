@@ -1,6 +1,6 @@
-# ZENEX Mobile Frontend
+# SIMSOR Mobile Frontend
 
-React + Vite mobile client for **ZENEX** (sports & entertainment events).
+React + Vite mobile client for **SIMSOR** (sports & entertainment events).
 
 This is **not a desktop website** — the UI is mobile-only (bottom nav, full-screen map, touch layout). Native Android/iOS builds use Capacitor.
 

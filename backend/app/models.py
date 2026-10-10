@@ -173,7 +173,7 @@ class Follow(Base):
 
 
 class Affinity(Base):
-    """Per-user interest score, ported from the client's `zenex-feed-affinity-v1`
+    """Per-user interest score, ported from the client's `simsor-feed-affinity-v1`
     localStorage store (see frontend/src/components/HomeFeed/feedAlgorithm.ts)
     plus new signals from Explore/Discover clicks — see app/affinity.py for the
     full list of reasons and weights that write to this table.
@@ -220,8 +220,8 @@ class Conversation(Base):
 
 class ConversationMember(Base):
     """One row per (conversation, user). Also where pin/mute/hidden/last-read
-    state now lives — replacing the client's per-device `zenex-chat-pins-v1` /
-    `zenex-chat-mutes-v1` / `zenex-chat-hidden-v1` localStorage keys for
+    state now lives — replacing the client's per-device `simsor-chat-pins-v1` /
+    `simsor-chat-mutes-v1` / `simsor-chat-hidden-v1` localStorage keys for
     dm/group chats with real, per-account state."""
 
     __tablename__ = "conversation_members"

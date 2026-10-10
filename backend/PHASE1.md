@@ -65,7 +65,7 @@ backend/
       events.py                  Unchanged Phase-2 stub (kept out of main.py)
   alembic/                        Migration scaffolding (see below)
   alembic.ini
-  legacy/zenex_hello_world.py       Archived old hello-world stub (was backend/main.py)
+  legacy/simsor_hello_world.py       Archived old hello-world stub (was backend/main.py)
   .env.example
   requirements.txt
 ```
@@ -116,8 +116,8 @@ defaults to `*` for local dev — **must be set to real origins before public
 launch** (see `API_CONTRACT.md` / the shipping checklist).
 
 ### Repo cleanup done alongside this
-- `backend/main.py` (the old ZENEX "hello world" stub, unrelated to
-  `backend/app/main.py`) moved to `backend/legacy/zenex_hello_world.py` and
+- `backend/main.py` (the old SIMSOR "hello world" stub, unrelated to
+  `backend/app/main.py`) moved to `backend/legacy/simsor_hello_world.py` and
   marked archived, per the cleanup checklist. It is not imported or run by
   anything.
 - `.gitignore` updated to ignore the local `backend/*.db` SQLite file.

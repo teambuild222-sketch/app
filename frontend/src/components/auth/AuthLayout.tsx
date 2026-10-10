@@ -18,21 +18,21 @@ export const AuthLayout: React.FC = () => {
   };
 
   return (
-    <div className="zenex-auth-shell">
+    <div className="simsor-auth-shell">
       {/* Dynamic atmospheric mesh background */}
-      <div className="zenex-auth-ambient" aria-hidden />
+      <div className="simsor-auth-ambient" aria-hidden />
 
-      <div className="zenex-auth-frame">
+      <div className="simsor-auth-frame">
         {/* Top bar with quick theme toggle */}
-        <header className="zenex-auth-topbar">
-          <div className="zenex-auth-pill-badge">
-            <Sparkles size={13} className="zenex-auth-badge-icon" />
+        <header className="simsor-auth-topbar">
+          <div className="simsor-auth-pill-badge">
+            <Sparkles size={13} className="simsor-auth-badge-icon" />
             <span>Community Platform</span>
           </div>
 
           <button
             type="button"
-            className="zenex-auth-theme-btn"
+            className="simsor-auth-theme-btn"
             onClick={toggleTheme}
             aria-label="Toggle light/dark theme"
             title="Toggle theme"
@@ -42,25 +42,25 @@ export const AuthLayout: React.FC = () => {
         </header>
 
         {/* Central Brand Identity */}
-        <div className="zenex-auth-hero">
-          <div className="zenex-auth-logo-orbit">
-            <div className="zenex-auth-logo-glow" aria-hidden />
-            <div className="zenex-auth-logo-badge">
-              <img src="/logo.png" alt="Zenex" className="zenex-auth-logo-img" />
+        <div className="simsor-auth-hero">
+          <div className="simsor-auth-logo-orbit">
+            <div className="simsor-auth-logo-glow" aria-hidden />
+            <div className="simsor-auth-logo-badge">
+              <img src="/logo.png" alt="Simsor" className="simsor-auth-logo-img" />
             </div>
           </div>
-          <h1 className="zenex-auth-brand-name">ZENEX</h1>
-          <p className="zenex-auth-brand-tagline">Sports · Events · Communities</p>
+          <h1 className="simsor-auth-brand-name">SIMSOR</h1>
+          <p className="simsor-auth-brand-tagline">Sports · Events · Communities</p>
         </div>
 
         {/* Pill Segmented Switcher */}
-        <div className="zenex-auth-pill-tabs" role="tablist" aria-label="Auth tabs">
-          <div className={`zenex-auth-pill-slider ${activeTab === 'signup' ? 'is-signup' : 'is-login'}`} />
+        <div className="simsor-auth-pill-tabs" role="tablist" aria-label="Auth tabs">
+          <div className={`simsor-auth-pill-slider ${activeTab === 'signup' ? 'is-signup' : 'is-login'}`} />
           <button
             type="button"
             role="tab"
             aria-selected={activeTab === 'login'}
-            className={`zenex-auth-pill-tab ${activeTab === 'login' ? 'active' : ''}`}
+            className={`simsor-auth-pill-tab ${activeTab === 'login' ? 'active' : ''}`}
             onClick={() => handleTabChange('login')}
           >
             Sign In
@@ -69,7 +69,7 @@ export const AuthLayout: React.FC = () => {
             type="button"
             role="tab"
             aria-selected={activeTab === 'signup'}
-            className={`zenex-auth-pill-tab ${activeTab === 'signup' ? 'active' : ''}`}
+            className={`simsor-auth-pill-tab ${activeTab === 'signup' ? 'active' : ''}`}
             onClick={() => handleTabChange('signup')}
           >
             Sign Up
@@ -77,7 +77,7 @@ export const AuthLayout: React.FC = () => {
         </div>
 
         {/* Seamless Blended Form Panel */}
-        <main className="zenex-auth-body">
+        <main className="simsor-auth-body">
           {activeTab === 'login' ? (
             <LoginPage />
           ) : (
@@ -86,8 +86,8 @@ export const AuthLayout: React.FC = () => {
         </main>
 
         {/* Subtle footer credit */}
-        <footer className="zenex-auth-footer">
-          <span>Protected by Zenex Trust & Safety</span>
+        <footer className="simsor-auth-footer">
+          <span>Protected by Simsor Trust & Safety</span>
         </footer>
       </div>
     </div>

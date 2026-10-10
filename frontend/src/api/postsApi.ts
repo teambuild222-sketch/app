@@ -1,6 +1,6 @@
 /**
  * Posts API facade (Phase 3) — real, shared posts replacing the localStorage
- * `zenex-user-posts-v1` store. No mock fallback here: callers that need to
+ * `simsor-user-posts-v1` store. No mock fallback here: callers that need to
  * work in mock mode too should branch on `isBackendEnabled()` themselves
  * (see components/HomeFeed/feedSource.ts), same pattern as usersApi.ts.
  */

@@ -11,7 +11,7 @@ import { fetchMyAffinity, trackAffinity } from '../../api/affinityApi';
 import type { AffinityReason } from '../../api/types';
 
 /* ============================================================
-   ZENEX Home feed ranking
+   SIMSOR Home feed ranking
    ------------------------------------------------------------
    Instagram-style feed: posts from people you follow come first
    (freshest at the top). Everything else is ranked into a
@@ -25,11 +25,11 @@ import type { AffinityReason } from '../../api/types';
    All state is persisted in localStorage (no backend needed).
    ============================================================ */
 
-const FOLLOWING_KEY = 'zenex-following-v1';
-const AFFINITY_KEY = 'zenex-feed-affinity-v1';
-const SEED_FLAG_KEY = 'zenex-following-seeded-v1';
+const FOLLOWING_KEY = 'simsor-following-v1';
+const AFFINITY_KEY = 'simsor-feed-affinity-v1';
+const SEED_FLAG_KEY = 'simsor-following-seeded-v1';
 
-export const FEED_CHANGED_EVENT = 'zenex-feed-changed';
+export const FEED_CHANGED_EVENT = 'simsor-feed-changed';
 
 type AffinityStore = {
   categories: Record<string, number>;
@@ -155,8 +155,8 @@ export function isFollowedPost(post: HomeFeedPost): boolean {
 /* ---------- Interests (from profile) ---------- */
 
 export function getUserInterests(): Set<string> {
-  const sports = readJSON<string[]>('zenex-sports', ['Cricket', 'Football']);
-  const ent = readJSON<string[]>('zenex-ent', ['Music']);
+  const sports = readJSON<string[]>('simsor-sports', ['Cricket', 'Football']);
+  const ent = readJSON<string[]>('simsor-ent', ['Music']);
   return new Set([...sports, ...ent].map((s) => s.toLowerCase()));
 }
 

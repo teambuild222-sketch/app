@@ -10,18 +10,18 @@ import { ensurePeopleListsHydrated } from '../components/HomeFeed/audienceLists'
 import { syncRealtimeAuth } from '../lib/supabaseClient';
 import { registerForPush, unregisterPush } from '../lib/pushNotifications';
 
-export const AUTH_FLAG_KEY = 'zenex-auth';
+export const AUTH_FLAG_KEY = 'simsor-auth';
 export const AUTH_CHANGED_EVENT = 'simsor-auth-changed';
 
 const PROFILE_KEYS = {
   id: 'simsor-user-id',
-  username: 'zenex-username',
-  fullName: 'zenex-fullname',
-  bio: 'zenex-bio',
-  location: 'zenex-location',
-  avatar: 'zenex-avatar',
-  sports: 'zenex-sports',
-  entertainment: 'zenex-ent',
+  username: 'simsor-username',
+  fullName: 'simsor-fullname',
+  bio: 'simsor-bio',
+  location: 'simsor-location',
+  avatar: 'simsor-avatar',
+  sports: 'simsor-sports',
+  entertainment: 'simsor-ent',
 } as const;
 
 function emitAuthChanged() {

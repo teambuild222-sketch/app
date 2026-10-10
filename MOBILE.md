@@ -1,6 +1,6 @@
-# ZENEX Mobile App
+# SIMSOR Mobile App
 
-ZENEX is a **mobile-first** sports and entertainment events app. The UI is built for phones (bottom navigation, full-screen map, touch targets). Native Android and iOS builds use [Capacitor](https://capacitorjs.com/).
+SIMSOR is a **mobile-first** sports and entertainment events app. The UI is built for phones (bottom navigation, full-screen map, touch targets). Native Android and iOS builds use [Capacitor](https://capacitorjs.com/).
 
 ## Requirements
 
@@ -76,5 +76,5 @@ Then rebuild: `npm run cap:sync`
 
 ## App ID
 
-- **Bundle ID:** `com.zenex.app`
-- **Display name:** ZENEX
+- **Bundle ID:** `com.simsor.app`
+- **Display name:** SIMSOR

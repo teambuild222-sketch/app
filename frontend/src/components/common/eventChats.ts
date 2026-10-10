@@ -28,9 +28,9 @@ type TranscriptMessage = {
 
 type StoredChatSession = Omit<EventGroupChat, 'messages'>;
 
-const EVENT_CHATS_KEY = 'zenex-event-chats-v1';
-const EVENT_TRANSCRIPT_KEY = 'zenex-event-chat-transcript-v1';
-export const EVENT_CHATS_CHANGED_EVENT = 'zenex-event-chats-changed';
+const EVENT_CHATS_KEY = 'simsor-event-chats-v1';
+const EVENT_TRANSCRIPT_KEY = 'simsor-event-chat-transcript-v1';
+export const EVENT_CHATS_CHANGED_EVENT = 'simsor-event-chats-changed';
 
 const DEMO_MEMBERS = [
   { id: 'org-priya', name: 'Priya Reddy' },

@@ -1,7 +1,7 @@
 """Server-side port of the client's affinity/interest scoring inputs.
 
 Previously lived entirely in frontend/src/components/HomeFeed/feedAlgorithm.ts
-as a localStorage store (`zenex-feed-affinity-v1`), bumped only by dwell time
+as a localStorage store (`simsor-feed-affinity-v1`), bumped only by dwell time
 and a handful of Home feed interactions. Phase 3 moves the data here (so it's
 shared across devices) and adds three new reasons from Explore/Discover clicks
 per the product ask: "the more I click into a certain type of event or

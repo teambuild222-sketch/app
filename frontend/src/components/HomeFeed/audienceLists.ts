@@ -5,8 +5,8 @@ export type PeopleList = {
   updatedAt: number;
 };
 
-const STORAGE_KEY = 'zenex-people-lists-v1';
-export const PEOPLE_LISTS_CHANGED_EVENT = 'zenex-people-lists-changed';
+const STORAGE_KEY = 'simsor-people-lists-v1';
+export const PEOPLE_LISTS_CHANGED_EVENT = 'simsor-people-lists-changed';
 
 function notify(): void {
   window.dispatchEvent(new CustomEvent(PEOPLE_LISTS_CHANGED_EVENT));

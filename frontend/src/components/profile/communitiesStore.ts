@@ -32,12 +32,12 @@ type StoredCommunityChat = {
   createdAt?: number;
 };
 
-export const COMMUNITIES_CHANGED = 'zenex-communities-changed';
+export const COMMUNITIES_CHANGED = 'simsor-communities-changed';
 
-const STORE_KEY = 'zenex-communities-v1';
-const MEMBERSHIPS_KEY = 'zenex-community-memberships-v1';
-const DEMO_SEEDED_KEY = 'zenex-community-demo-seeded-v1';
-const CHAT_STORE_KEY = 'zenex-chat-store-v2';
+const STORE_KEY = 'simsor-communities-v1';
+const MEMBERSHIPS_KEY = 'simsor-community-memberships-v1';
+const DEMO_SEEDED_KEY = 'simsor-community-demo-seeded-v1';
+const CHAT_STORE_KEY = 'simsor-chat-store-v2';
 
 const DEMO_JOINED_COMMUNITY_ID = 'community-demo-hyd-sports';
 

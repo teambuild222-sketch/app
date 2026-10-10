@@ -1051,7 +1051,7 @@
   color: var(--home-bw-fg, #000);
 }
 
-html.zenex-mobile-app .chat-shell,
+html.simsor-mobile-app .chat-shell,
 .mobile-app-mode .chat-shell {
   display: flex;
   flex-direction: column;
@@ -1063,27 +1063,27 @@ html.zenex-mobile-app .chat-shell,
   border-radius: 0;
 }
 
-html.zenex-mobile-app .home-active.chat-active .chat-page,
+html.simsor-mobile-app .home-active.chat-active .chat-page,
 .mobile-app-mode .home-active.chat-active .chat-page,
-html.zenex-mobile-app .home-active.chat-active .chat-page-view,
+html.simsor-mobile-app .home-active.chat-active .chat-page-view,
 .mobile-app-mode .home-active.chat-active .chat-page-view,
-html.zenex-mobile-app .home-active.chat-active .chat-list-panel,
+html.simsor-mobile-app .home-active.chat-active .chat-list-panel,
 .mobile-app-mode .home-active.chat-active .chat-list-panel,
-html.zenex-mobile-app .home-active.chat-active .chat-session-list,
+html.simsor-mobile-app .home-active.chat-active .chat-session-list,
 .mobile-app-mode .home-active.chat-active .chat-session-list {
   flex: 1 1 auto;
   min-height: 0;
   height: 100%;
 }
 
-html.zenex-mobile-app .home-active.chat-active .chat-inbox-empty,
+html.simsor-mobile-app .home-active.chat-active .chat-inbox-empty,
 .mobile-app-mode .home-active.chat-active .chat-inbox-empty {
   flex: 1 1 auto;
   min-height: 0;
   align-self: stretch;
 }
 
-html.zenex-mobile-app .chat-page,
+html.simsor-mobile-app .chat-page,
 .mobile-app-mode .chat-page {
   width: 100%;
   max-width: 100%;
@@ -1095,7 +1095,7 @@ html.zenex-mobile-app .chat-page,
   box-sizing: border-box;
 }
 
-html.zenex-mobile-app .chat-page-view,
+html.simsor-mobile-app .chat-page-view,
 .mobile-app-mode .chat-page-view {
   flex: 1;
   min-height: 0;

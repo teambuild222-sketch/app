@@ -1,6 +1,6 @@
 /**
  * Chat Phase API facade — real, shared DM/group chat backed by Supabase
- * Postgres, replacing the localStorage `zenex-chat-store-v2` slice for those
+ * Postgres, replacing the localStorage `simsor-chat-store-v2` slice for those
  * two conversation types (event chats + communities are unaffected). No mock
  * fallback here: callers should branch on `isBackendEnabled()` themselves,
  * same pattern as postsApi.ts/followApi.ts.

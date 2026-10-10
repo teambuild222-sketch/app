@@ -22,8 +22,8 @@ import { createPost, deletePost } from '../../api/postsApi';
 import type { EventDto, PostCreatePayload } from '../../api/types';
 import { mapPostDtoToHomeFeedPost } from './homeFeed';
 
-const USER_POSTS_KEY = 'zenex-user-posts-v1';
-export const USER_POSTS_CHANGED_EVENT = 'zenex-user-posts-changed';
+const USER_POSTS_KEY = 'simsor-user-posts-v1';
+export const USER_POSTS_CHANGED_EVENT = 'simsor-user-posts-changed';
 
 export type CreateMedia = { type: 'image' | 'video'; url: string } | null;
 
@@ -85,7 +85,7 @@ export function deleteUserPost(postId: string): void {
 
 /* ---------- Join / RSVP tracking (current user) ---------- */
 
-const JOINED_KEY = 'zenex-joined-v1';
+const JOINED_KEY = 'simsor-joined-v1';
 
 function getJoined(): string[] {
   try {

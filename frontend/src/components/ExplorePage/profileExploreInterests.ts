@@ -1,6 +1,6 @@
 import { SPORTS_CATEGORIES, ENTERTAINMENT_CATEGORIES } from './eventMapIcons';
 
-export const USER_INTERESTS_CHANGED_EVENT = 'zenex-user-interests-changed';
+export const USER_INTERESTS_CHANGED_EVENT = 'simsor-user-interests-changed';
 
 const SPORTS_SET = new Set<string>(SPORTS_CATEGORIES);
 const ENTERTAINMENT_SET = new Set<string>(ENTERTAINMENT_CATEGORIES);
@@ -62,7 +62,7 @@ function uniquePreserveOrder(items: string[]): string[] {
 
 /** Ordered Explore Sports chips derived from profile interests. */
 export function getPreferredSportsFilters(): string[] {
-  const sports = readJSON<string[]>('zenex-sports', ['Cricket', 'Football']);
+  const sports = readJSON<string[]>('simsor-sports', ['Cricket', 'Football']);
   return uniquePreserveOrder(
     sports.map(mapInterest).filter((f): f is string => !!f && SPORTS_SET.has(f)),
   );
@@ -70,7 +70,7 @@ export function getPreferredSportsFilters(): string[] {
 
 /** Ordered Explore Entertainment chips derived from profile interests. */
 export function getPreferredEntertainmentFilters(): string[] {
-  const ent = readJSON<string[]>('zenex-ent', ['Music', 'Food Events']);
+  const ent = readJSON<string[]>('simsor-ent', ['Music', 'Food Events']);
   return uniquePreserveOrder(
     ent.map(mapInterest).filter((f): f is string => !!f && ENTERTAINMENT_SET.has(f)),
   );

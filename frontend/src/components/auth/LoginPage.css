@@ -1,9 +1,9 @@
 /* ====================================================
-   Zenex Login Styles – Fluid Full-Bleed Mobile Aesthetic
+   Simsor Login Styles – Fluid Full-Bleed Mobile Aesthetic
    Crisp hairline borders and seamless edge blending
    ==================================================== */
 
-.zenex-login-container {
+.simsor-login-container {
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -12,19 +12,19 @@
   -ms-overflow-style: none;
 }
 
-.zenex-login-container::-webkit-scrollbar {
+.simsor-login-container::-webkit-scrollbar {
   display: none;
   width: 0;
   height: 0;
 }
 
 /* Card Header */
-.zenex-card-header {
+.simsor-card-header {
   margin-bottom: 16px;
   text-align: left;
 }
 
-.zenex-card-title {
+.simsor-card-title {
   font-size: 21px;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -33,7 +33,7 @@
   line-height: 1.2;
 }
 
-.zenex-card-subtitle {
+.simsor-card-subtitle {
   font-size: 13px;
   font-weight: 400;
   color: var(--text-tertiary);
@@ -42,7 +42,7 @@
 }
 
 /* Error Banner */
-.zenex-auth-error {
+.simsor-auth-error {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -68,21 +68,21 @@
 }
 
 /* Form Structure */
-.zenex-login-form {
+.simsor-login-form {
   display: flex;
   flex-direction: column;
   gap: 13px;
   width: 100%;
 }
 
-.zenex-field-group {
+.simsor-field-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
   text-align: left;
 }
 
-.zenex-field-label {
+.simsor-field-label {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -232,7 +232,7 @@
 }
 
 /* Login Helper Row (Forgot Password & Face ID) */
-.zenex-login-helpers {
+.simsor-login-helpers {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -241,7 +241,7 @@
   min-height: 32px;
 }
 
-.zenex-text-link {
+.simsor-text-link {
   background: transparent;
   border: none;
   padding: 0;
@@ -256,12 +256,12 @@
   transition: color 0.18s ease;
 }
 
-.zenex-text-link:hover {
+.simsor-text-link:hover {
   color: var(--text-primary);
   text-decoration: underline;
 }
 
-.zenex-faceid-pill {
+.simsor-faceid-pill {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -279,36 +279,36 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
-[data-theme='light'] .zenex-faceid-pill {
+[data-theme='light'] .simsor-faceid-pill {
   background: rgba(0, 0, 0, 0.04);
   border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.zenex-faceid-pill:hover {
+.simsor-faceid-pill:hover {
   border-color: rgba(233, 220, 190, 0.45);
   color: var(--text-primary);
   background: rgba(233, 220, 190, 0.14);
   transform: translateY(-1px);
 }
 
-[data-theme='light'] .zenex-faceid-pill:hover {
+[data-theme='light'] .simsor-faceid-pill:hover {
   background: rgba(0, 0, 0, 0.08);
 }
 
-.zenex-faceid-pill:active {
+.simsor-faceid-pill:active {
   transform: scale(0.96);
 }
 
-.zenex-faceid-icon {
+.simsor-faceid-icon {
   color: var(--accent-primary);
 }
 
-[data-theme='light'] .zenex-faceid-icon {
+[data-theme='light'] .simsor-faceid-icon {
   color: #111113;
 }
 
 /* Primary Action Button */
-.zenex-primary-btn,
+.simsor-primary-btn,
 .ios-primary-btn {
   position: relative;
   width: 100%;
@@ -333,31 +333,31 @@
     filter 0.18s ease;
 }
 
-[data-theme='dark'] .zenex-primary-btn,
+[data-theme='dark'] .simsor-primary-btn,
 [data-theme='dark'] .ios-primary-btn {
   background: linear-gradient(135deg, #f5ecce 0%, #e9dcbe 50%, #d4c39c 100%) !important;
   color: #121214 !important;
   box-shadow: 0 4px 22px rgba(233, 220, 190, 0.28) !important;
 }
 
-.zenex-primary-btn:hover:not(:disabled),
+.simsor-primary-btn:hover:not(:disabled),
 .ios-primary-btn:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
   filter: brightness(1.04);
 }
 
-[data-theme='dark'] .zenex-primary-btn:hover:not(:disabled),
+[data-theme='dark'] .simsor-primary-btn:hover:not(:disabled),
 [data-theme='dark'] .ios-primary-btn:hover:not(:disabled) {
   box-shadow: 0 6px 28px rgba(233, 220, 190, 0.42) !important;
 }
 
-.zenex-primary-btn:active:not(:disabled),
+.simsor-primary-btn:active:not(:disabled),
 .ios-primary-btn:active:not(:disabled) {
   transform: scale(0.985);
 }
 
-.zenex-primary-btn:disabled,
+.simsor-primary-btn:disabled,
 .ios-primary-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -365,15 +365,15 @@
   box-shadow: none;
 }
 
-.zenex-btn-arrow {
+.simsor-btn-arrow {
   transition: transform 0.2s ease;
 }
 
-.zenex-primary-btn:hover .zenex-btn-arrow {
+.simsor-primary-btn:hover .simsor-btn-arrow {
   transform: translateX(3px);
 }
 
-.zenex-btn-spinner {
+.simsor-btn-spinner {
   width: 20px;
   height: 20px;
   border: 2.5px solid rgba(255, 255, 255, 0.25);
@@ -387,7 +387,7 @@
 }
 
 /* Hairline Gradient Divider */
-.zenex-divider {
+.simsor-divider {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -395,20 +395,20 @@
   width: 100%;
 }
 
-.zenex-divider::before,
-.zenex-divider::after {
+.simsor-divider::before,
+.simsor-divider::after {
   content: '';
   flex: 1;
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
 }
 
-[data-theme='light'] .zenex-divider::before,
-[data-theme='light'] .zenex-divider::after {
+[data-theme='light'] .simsor-divider::before,
+[data-theme='light'] .simsor-divider::after {
   background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.08), transparent);
 }
 
-.zenex-divider span {
+.simsor-divider span {
   padding: 0 12px;
   font-size: 11px;
   font-weight: 600;
@@ -473,13 +473,13 @@
 }
 
 /* Quick Fill Demo Chip (Refined solid hairline pill, no dashed outline) */
-.zenex-demo-quickfill {
+.simsor-demo-quickfill {
   display: flex;
   justify-content: center;
   margin-top: 12px;
 }
 
-.zenex-demo-chip {
+.simsor-demo-chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -497,7 +497,7 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
-.zenex-demo-chip:hover {
+.simsor-demo-chip:hover {
   background: rgba(233, 220, 190, 0.16);
   border-color: rgba(233, 220, 190, 0.4);
   color: var(--text-primary);
@@ -505,16 +505,16 @@
   box-shadow: 0 4px 12px rgba(233, 220, 190, 0.12);
 }
 
-.zenex-demo-chip:active {
+.simsor-demo-chip:active {
   transform: scale(0.96);
 }
 
-.zenex-demo-sparkle {
+.simsor-demo-sparkle {
   color: var(--accent-primary);
 }
 
 /* Modals & Overlays */
-.zenex-modal-overlay {
+.simsor-modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.72);
@@ -527,7 +527,7 @@
   padding: 16px;
 }
 
-.zenex-modal-card {
+.simsor-modal-card {
   width: min(360px, 92vw);
   background: #18181b;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -539,26 +539,26 @@
   gap: 12px;
 }
 
-[data-theme='light'] .zenex-modal-card {
+[data-theme='light'] .simsor-modal-card {
   background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.1);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
 }
 
-.zenex-modal-head {
+.simsor-modal-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.zenex-modal-head h3 {
+.simsor-modal-head h3 {
   font-size: 17px;
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
 }
 
-.zenex-modal-close {
+.simsor-modal-close {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--text-secondary);
@@ -572,16 +572,16 @@
   transition: opacity 0.18s ease;
 }
 
-[data-theme='light'] .zenex-modal-close {
+[data-theme='light'] .simsor-modal-close {
   background: rgba(0, 0, 0, 0.06);
   border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-.zenex-modal-close:hover {
+.simsor-modal-close:hover {
   opacity: 0.7;
 }
 
-.zenex-modal-note {
+.simsor-modal-note {
   font-size: 12px;
   color: var(--accent-primary);
   background: rgba(233, 220, 190, 0.1);
@@ -590,20 +590,20 @@
   margin: 0;
 }
 
-.zenex-modal-desc {
+.simsor-modal-desc {
   font-size: 12.5px;
   color: var(--text-tertiary);
   margin: 0 0 10px;
   line-height: 1.45;
 }
 
-.zenex-modal-body {
+.simsor-modal-body {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.zenex-modal-input {
+.simsor-modal-input {
   width: 100%;
   height: 48px;
   border-radius: 14px;
@@ -618,18 +618,18 @@
   box-sizing: border-box;
 }
 
-[data-theme='light'] .zenex-modal-input {
+[data-theme='light'] .simsor-modal-input {
   background: rgba(0, 0, 0, 0.035);
   border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.zenex-modal-input:focus {
+.simsor-modal-input:focus {
   border-color: var(--accent-primary);
   box-shadow: 0 0 0 3px rgba(233, 220, 190, 0.2);
 }
 
 /* Face ID Overlay */
-.zenex-faceid-overlay {
+.simsor-faceid-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.65);
@@ -641,7 +641,7 @@
   z-index: 4000;
 }
 
-.zenex-faceid-modal {
+.simsor-faceid-modal {
   width: 180px;
   height: 180px;
   background: #18181b;
@@ -655,12 +655,12 @@
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
 }
 
-[data-theme='light'] .zenex-faceid-modal {
+[data-theme='light'] .simsor-faceid-modal {
   background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.zenex-faceid-glyph-wrap {
+.simsor-faceid-glyph-wrap {
   position: relative;
   width: 64px;
   height: 64px;
@@ -670,7 +670,7 @@
   color: var(--text-primary);
 }
 
-.zenex-faceid-radar {
+.simsor-faceid-radar {
   position: absolute;
   inset: -6px;
   border-radius: 50%;
@@ -678,22 +678,22 @@
   border-top-color: var(--accent-primary);
 }
 
-.zenex-faceid-glyph-wrap.is-scanning .zenex-faceid-radar {
+.simsor-faceid-glyph-wrap.is-scanning .simsor-faceid-radar {
   animation: radarSpin 1s linear infinite;
 }
 
-.zenex-faceid-glyph-wrap.is-success .zenex-faceid-radar {
+.simsor-faceid-glyph-wrap.is-success .simsor-faceid-radar {
   border-color: var(--success);
   transform: scale(1.15);
   opacity: 0;
   transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
-.zenex-faceid-glyph-wrap.is-success {
+.simsor-faceid-glyph-wrap.is-success {
   color: var(--success);
 }
 
-.zenex-faceid-scan-icon {
+.simsor-faceid-scan-icon {
   color: var(--accent-primary);
 }
 
@@ -701,7 +701,7 @@
   to { transform: rotate(360deg); }
 }
 
-.zenex-faceid-status {
+.simsor-faceid-status {
   font-size: 12.5px;
   font-weight: 600;
   color: var(--text-primary);

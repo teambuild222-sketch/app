@@ -12,7 +12,15 @@ From repo root (must be logged in as **teambuild222-sketch**):
 git push origin main --force-with-lease
 ```
 
-Or run: `.\scripts\push-teambuild-main.ps1`
+Or run (no PowerShell policy needed): `scripts\push-teambuild-main.cmd`
+
+Or paste directly:
+
+```powershell
+cd C:\Users\Adi\OneDrive\Documents\app
+git checkout main
+git push origin main --force-with-lease
+```
 
 Confirm: [backend/render.yaml](https://github.com/teambuild222-sketch/app/blob/main/backend/render.yaml) exists on `main`.
 

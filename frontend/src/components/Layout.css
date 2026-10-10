@@ -1,9 +1,9 @@
 /* ====================================================
    Layout.css – Global Layout, Sidebar, and Page Styling
-   ZENEX Viewport-Based Responsive Application
+   SIMSOR Viewport-Based Responsive Application
    ==================================================== */
 
-.zenex-app-shell {
+.simsor-app-shell {
   width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
@@ -17,7 +17,7 @@
 }
 
 /* ---------- Fixed Header ---------- */
-.zenex-header {
+.simsor-header {
   position: sticky;
   top: 0;
   left: 0;
@@ -40,19 +40,19 @@
   box-sizing: border-box;
 }
 
-.zenex-header-start {
+.simsor-header-start {
   min-width: 36px;
   height: 36px;
 }
 
-.zenex-header-center {
+.simsor-header-center {
   display: flex;
   align-items: center;
   justify-content: center;
   min-width: 0;
 }
 
-.zenex-brand-group {
+.simsor-brand-group {
   display: flex;
   align-items: center;
   gap: 0;
@@ -60,7 +60,7 @@
   padding-left: 2px;
 }
 
-.zenex-logo-pill {
+.simsor-logo-pill {
   width: 30px;
   height: 30px;
   border-radius: 50%;
@@ -76,7 +76,7 @@
   flex-shrink: 0;
 }
 
-.zenex-logo-pill:hover {
+.simsor-logo-pill:hover {
   transform: scale(1.04);
 }
 
@@ -90,20 +90,20 @@
 
 /* Responsive header logo sizing */
 @media (min-width: 768px) and (max-width: 1024px) {
-  .zenex-logo-pill {
+  .simsor-logo-pill {
     width: 32px;
     height: 32px;
   }
 }
 
 @media (min-width: 1025px) {
-  .zenex-logo-pill {
+  .simsor-logo-pill {
     width: 34px;
     height: 34px;
   }
 }
 
-.zenex-app-title {
+.simsor-app-title {
   font-family: 'Michroma', sans-serif;
   font-size: 0.88rem;
   font-weight: 400;
@@ -117,11 +117,11 @@
   user-select: none;
 }
 
-[data-theme="dark"] .zenex-app-title {
+[data-theme="dark"] .simsor-app-title {
   color: #E9DCBE; /* Dark Mode: Cream accent text (#E9DCBE) */
 }
 
-.zenex-header-actions {
+.simsor-header-actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -245,7 +245,7 @@
 }
 
 /* ---------- Responsive Layout Grid ---------- */
-.zenex-layout-grid {
+.simsor-layout-grid {
   display: grid;
   gap: 24px;
   width: 100%;
@@ -258,21 +258,21 @@
 }
 
 /* Grid setups based on state */
-.zenex-layout-grid.sidebar-expanded {
+.simsor-layout-grid.sidebar-expanded {
   grid-template-columns: 1fr;
 }
 
-.zenex-layout-grid.sidebar-collapsed {
+.simsor-layout-grid.sidebar-collapsed {
   grid-template-columns: 1fr;
 }
 
 /* ---------- Sidebar styling ---------- */
-.zenex-sidebar {
+.simsor-sidebar {
   display: none;
   transition: all 0.3s ease;
 }
 
-.zenex-sidebar-inner {
+.simsor-sidebar-inner {
   position: sticky;
   top: calc(var(--header-height) + 24px);
   display: flex;
@@ -286,27 +286,27 @@
   transition: background var(--transition-theme), border-color var(--transition-theme);
 }
 
-.zenex-sidebar-brand {
+.simsor-sidebar-brand {
   display: none; /* Only visible on desktop left menu header */
   align-items: center;
   gap: 12px;
   margin-bottom: var(--space-md);
 }
 
-.zenex-sidebar-logo-img {
+.simsor-sidebar-logo-img {
   width: 36px;
   height: 36px;
   object-fit: contain;
   flex-shrink: 0;
 }
 
-.zenex-sidebar-logo-text {
+.simsor-sidebar-logo-text {
   font-size: 1.2rem;
   font-weight: var(--font-weight-bold);
   color: var(--text-primary);
 }
 
-.zenex-sidebar-title {
+.simsor-sidebar-title {
   color: var(--text-tertiary);
   font-size: 10px;
   font-weight: var(--font-weight-bold);
@@ -315,8 +315,8 @@
   padding-left: 12px;
 }
 
-.zenex-nav-links,
-.zenex-sidebar-utilities {
+.simsor-nav-links,
+.simsor-sidebar-utilities {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -366,7 +366,7 @@
   color: var(--accent-pink);
 }
 
-.zenex-sidebar-divider {
+.simsor-sidebar-divider {
   height: 1px;
   background: var(--border-color);
   opacity: 0.6;
@@ -374,14 +374,14 @@
 }
 
 /* ---------- Main Panel ---------- */
-.zenex-main-panel {
+.simsor-main-panel {
   display: flex;
   flex-direction: column;
   gap: 24px;
   min-width: 0;
 }
 
-.zenex-hero-card {
+.simsor-hero-card {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -395,7 +395,7 @@
 }
 
 /* Blended hero – flows into the page (no card box), like the home header */
-.zenex-hero-card--blended {
+.simsor-hero-card--blended {
   padding: 8px 2px 4px;
   background: transparent;
   border: none;
@@ -404,14 +404,14 @@
   -webkit-backdrop-filter: none;
 }
 
-.zenex-hero-card--blended .hero-card-icon {
+.simsor-hero-card--blended .hero-card-icon {
   background: transparent;
   border: none;
   box-shadow: none;
   color: var(--text-secondary);
 }
 
-.zenex-hero-card--blended .hero-icon-glow {
+.simsor-hero-card--blended .hero-icon-glow {
   display: none;
 }
 
@@ -465,7 +465,7 @@
   border-radius: inherit;
 }
 
-.zenex-dashboard-grid {
+.simsor-dashboard-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 20px;
@@ -791,7 +791,7 @@
 }
 
 /* Home page shell – black & white palette */
-.zenex-app-shell.home-active {
+.simsor-app-shell.home-active {
   --home-bw-fg: #000000;
   --home-bw-bg: #ffffff;
   --home-bw-muted: #666666;
@@ -803,7 +803,7 @@
   color: var(--home-bw-fg) !important;
 }
 
-[data-theme='dark'] .zenex-app-shell.home-active {
+[data-theme='dark'] .simsor-app-shell.home-active {
   --home-bw-fg: #ffffff;
   --home-bw-bg: #0a0a0a;
   --home-bw-muted: #aaaaaa;
@@ -814,21 +814,21 @@
 }
 
 /* Keep feed/discover background unified when ExplorePage sets global --bg-primary to #000 */
-html[data-theme='dark']:has(.zenex-app-shell.home-active) {
+html[data-theme='dark']:has(.simsor-app-shell.home-active) {
   --bg-primary: #0a0a0a !important;
 }
 
-html[data-theme='light']:has(.zenex-app-shell.home-active) {
+html[data-theme='light']:has(.simsor-app-shell.home-active) {
   --bg-primary: #ffffff !important;
 }
 
 /* Home & Discover – one continuous surface; scroll behind floating nav */
-.home-active .zenex-layout-grid {
+.home-active .simsor-layout-grid {
   padding-bottom: 0;
   background: var(--home-bw-bg);
 }
 
-.home-active .zenex-main-panel {
+.home-active .simsor-main-panel {
   background: var(--home-bw-bg);
   flex: 1;
   min-height: 0;
@@ -842,7 +842,7 @@ html[data-theme='light']:has(.zenex-app-shell.home-active) {
   flex-shrink: 0;
 }
 
-.home-active .zenex-header {
+.home-active .simsor-header {
   background: var(--home-bw-bg) !important;
   border-bottom: none !important;
   backdrop-filter: none !important;
@@ -856,12 +856,12 @@ html[data-theme='light']:has(.zenex-app-shell.home-active) {
   grid-template-columns: minmax(32px, 1fr) auto minmax(32px, 1fr);
 }
 
-.home-active .zenex-header-start {
+.home-active .simsor-header-start {
   min-width: 32px;
   height: 32px;
 }
 
-.home-active .zenex-app-title {
+.home-active .simsor-app-title {
   color: var(--home-bw-fg) !important;
   font-family: 'Michroma', sans-serif !important;
   font-weight: 400 !important;
@@ -873,7 +873,7 @@ html[data-theme='light']:has(.zenex-app-shell.home-active) {
 }
 
 /* Home header blends into the page: no boxes, just logo + icons */
-.home-active .zenex-logo-pill {
+.home-active .simsor-logo-pill {
   width: 28px !important;
   height: 28px !important;
   background: transparent !important;
@@ -995,7 +995,7 @@ html[data-theme='light']:has(.zenex-app-shell.home-active) {
 }
 
 /* Home page content – black & white theme */
-.home-feed-view .zenex-hero-card,
+.home-feed-view .simsor-hero-card,
 .home-feed-view .info-card,
 .home-feed-view .event-card {
   background: var(--home-bw-card) !important;
@@ -1305,11 +1305,11 @@ html[data-theme='light']:has(.zenex-app-shell.home-active) {
 }
 
 /* Keep home / discover / chat / profile scroll clearance aligned */
-.home-active .zenex-main-panel {
+.home-active .simsor-main-panel {
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
 }
 
-.home-active .zenex-main-panel:has(.chat-page-view) {
+.home-active .simsor-main-panel:has(.chat-page-view) {
   overflow: hidden;
   gap: 0;
   display: flex;
@@ -1319,7 +1319,7 @@ html[data-theme='light']:has(.zenex-app-shell.home-active) {
 }
 
 /* Chat tab — lock full height even when inbox is empty */
-.home-active.chat-active .zenex-layout-grid {
+.home-active.chat-active .simsor-layout-grid {
   flex: 1;
   min-height: 0;
   align-items: stretch;
@@ -1327,7 +1327,7 @@ html[data-theme='light']:has(.zenex-app-shell.home-active) {
   padding-bottom: 0;
 }
 
-.home-active.chat-active .zenex-main-panel {
+.home-active.chat-active .simsor-main-panel {
   flex: 1;
   min-height: 0;
   overflow: hidden;
@@ -1344,35 +1344,35 @@ html[data-theme='light']:has(.zenex-app-shell.home-active) {
   min-height: 0;
 }
 
-.home-active .zenex-main-panel:has(.profile-page-view) {
+.home-active .simsor-main-panel:has(.profile-page-view) {
   gap: 0;
 }
 
 /* Chat + Profile – full-bleed to screen edges (content gutters live inside the page) */
-.home-active .zenex-layout-grid:has(.chat-page-view),
-.home-active .zenex-layout-grid:has(.profile-page-view) {
+.home-active .simsor-layout-grid:has(.chat-page-view),
+.home-active .simsor-layout-grid:has(.profile-page-view) {
   padding-left: 0;
   padding-right: 0;
 }
 
 /* Beat mobile-app !important 16px grid padding so profile/chat truly hit the phone edges */
-.mobile-app-mode .home-active .zenex-layout-grid:has(.chat-page-view),
-.mobile-app-mode .home-active .zenex-layout-grid:has(.profile-page-view),
-html.zenex-mobile-app .home-active .zenex-layout-grid:has(.chat-page-view),
-html.zenex-mobile-app .home-active .zenex-layout-grid:has(.profile-page-view) {
+.mobile-app-mode .home-active .simsor-layout-grid:has(.chat-page-view),
+.mobile-app-mode .home-active .simsor-layout-grid:has(.profile-page-view),
+html.simsor-mobile-app .home-active .simsor-layout-grid:has(.chat-page-view),
+html.simsor-mobile-app .home-active .simsor-layout-grid:has(.profile-page-view) {
   padding-left: 0 !important;
   padding-right: 0 !important;
 }
 
-.mobile-app-mode .home-active .zenex-layout-grid:has(.profile-page-view),
-html.zenex-mobile-app .home-active .zenex-layout-grid:has(.profile-page-view) {
+.mobile-app-mode .home-active .simsor-layout-grid:has(.profile-page-view),
+html.simsor-mobile-app .home-active .simsor-layout-grid:has(.profile-page-view) {
   padding-top: 0 !important;
   padding-bottom: 0 !important;
   gap: 0 !important;
 }
 
 /* ---------- Right Panel styling ---------- */
-.zenex-right-panel {
+.simsor-right-panel {
   display: none;
 }
 
@@ -1590,25 +1590,25 @@ html.zenex-mobile-app .home-active .zenex-layout-grid:has(.profile-page-view) {
 
 /* ---------- Tablet Viewport (768px – 1024px) ---------- */
 @media (min-width: 768px) {
-  .zenex-layout-grid {
+  .simsor-layout-grid {
     padding-bottom: 24px; /* Hide bottom padding since bottom navigation is gone */
   }
 
-  .zenex-layout-grid.sidebar-expanded {
+  .simsor-layout-grid.sidebar-expanded {
     grid-template-columns: 260px minmax(0, 1fr);
   }
 
-  .zenex-layout-grid.sidebar-collapsed {
+  .simsor-layout-grid.sidebar-collapsed {
     grid-template-columns: 0px minmax(0, 1fr);
   }
 
-  .zenex-sidebar {
+  .simsor-sidebar {
     display: block;
     width: 100%;
     overflow: hidden;
   }
 
-  .zenex-sidebar.collapsed {
+  .simsor-sidebar.collapsed {
     width: 0;
     padding: 0;
     opacity: 0;
@@ -1616,7 +1616,7 @@ html.zenex-mobile-app .home-active .zenex-layout-grid:has(.profile-page-view) {
     visibility: hidden;
   }
 
-  .zenex-dashboard-grid {
+  .simsor-dashboard-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1638,27 +1638,27 @@ html.zenex-mobile-app .home-active .zenex-layout-grid:has(.profile-page-view) {
 
 /* ---------- Desktop Viewport (>1024px) ---------- */
 @media (min-width: 1025px) {
-  .zenex-header {
+  .simsor-header {
     display: none; /* Hide standard header on desktop; sidebar handle it */
   }
 
-  .zenex-layout-grid {
+  .simsor-layout-grid {
     padding-top: var(--space-3xl);
   }
 
-  .zenex-layout-grid.sidebar-expanded {
+  .simsor-layout-grid.sidebar-expanded {
     grid-template-columns: 280px minmax(0, 1fr) 320px;
   }
 
-  .zenex-layout-grid.sidebar-collapsed {
+  .simsor-layout-grid.sidebar-collapsed {
     grid-template-columns: 0px minmax(0, 1fr) 320px;
   }
 
-  .zenex-sidebar-brand {
+  .simsor-sidebar-brand {
     display: flex;
   }
 
-  .zenex-right-panel {
+  .simsor-right-panel {
     display: flex;
     flex-direction: column;
     gap: 20px;
@@ -1681,7 +1681,7 @@ html.zenex-mobile-app .home-active .zenex-layout-grid:has(.profile-page-view) {
 
 /* ---------- Mobile Viewport (<767px) ---------- */
 @media (max-width: 767px) {
-  .zenex-header {
+  .simsor-header {
     padding-left: 12px;
     padding-right: 12px;
   }
@@ -1690,29 +1690,29 @@ html.zenex-mobile-app .home-active .zenex-layout-grid:has(.profile-page-view) {
     display: none; /* Toggle only available when sidebar is active */
   }
 
-  .zenex-layout-grid {
+  .simsor-layout-grid {
     padding-left: 16px;
     padding-right: 16px;
     padding-bottom: 0;
   }
 
-  .zenex-main-panel {
+  .simsor-main-panel {
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
     box-sizing: border-box;
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
 
-  .zenex-main-panel::-webkit-scrollbar {
+  .simsor-main-panel::-webkit-scrollbar {
     display: none;
     width: 0;
   }
 
-  .explore-active .zenex-main-panel {
+  .explore-active .simsor-main-panel {
     padding-bottom: 0;
   }
 
-  .zenex-sidebar {
+  .simsor-sidebar {
     display: none !important;
     visibility: hidden;
     width: 0;
@@ -1724,66 +1724,66 @@ html.zenex-mobile-app .home-active .zenex-layout-grid:has(.profile-page-view) {
    MOBILE APP – lock layout on all screen sizes
    ==================================================== */
 @media (min-width: 768px) {
-  html.zenex-mobile-app .bottom-navbar {
+  html.simsor-mobile-app .bottom-navbar {
     display: flex !important;
   }
 
-  html.zenex-mobile-app.profile-sheet-open .bottom-navbar,
-  html.zenex-mobile-app.create-community-open .bottom-navbar,
-  html.zenex-mobile-app.edit-profile-open .bottom-navbar {
+  html.simsor-mobile-app.profile-sheet-open .bottom-navbar,
+  html.simsor-mobile-app.create-community-open .bottom-navbar,
+  html.simsor-mobile-app.edit-profile-open .bottom-navbar {
     display: none !important;
   }
 
-  html.zenex-mobile-app .sidebar-toggle-btn {
+  html.simsor-mobile-app .sidebar-toggle-btn {
     display: none !important;
   }
 
-  html.zenex-mobile-app .zenex-sidebar,
-  html.zenex-mobile-app .zenex-right-panel {
+  html.simsor-mobile-app .simsor-sidebar,
+  html.simsor-mobile-app .simsor-right-panel {
     display: none !important;
   }
 
-  html.zenex-mobile-app .zenex-layout-grid,
-  html.zenex-mobile-app .zenex-layout-grid.sidebar-expanded,
-  html.zenex-mobile-app .zenex-layout-grid.sidebar-collapsed {
+  html.simsor-mobile-app .simsor-layout-grid,
+  html.simsor-mobile-app .simsor-layout-grid.sidebar-expanded,
+  html.simsor-mobile-app .simsor-layout-grid.sidebar-collapsed {
     grid-template-columns: 1fr !important;
     padding-top: 16px !important;
     max-width: 100% !important;
   }
 
-  html.zenex-mobile-app .home-active .zenex-layout-grid:has(.chat-page-view),
-  html.zenex-mobile-app .home-active .zenex-layout-grid:has(.profile-page-view) {
+  html.simsor-mobile-app .home-active .simsor-layout-grid:has(.chat-page-view),
+  html.simsor-mobile-app .home-active .simsor-layout-grid:has(.profile-page-view) {
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
 
-  html.zenex-mobile-app .home-active .zenex-layout-grid:has(.profile-page-view) {
+  html.simsor-mobile-app .home-active .simsor-layout-grid:has(.profile-page-view) {
     padding-top: 0 !important;
     padding-bottom: 0 !important;
     gap: 0 !important;
   }
 
-  html.zenex-mobile-app .zenex-dashboard-grid,
-  html.zenex-mobile-app .events-grid-layout,
-  html.zenex-mobile-app .discover-grid-layout,
-  html.zenex-mobile-app .players-grid-layout {
+  html.simsor-mobile-app .simsor-dashboard-grid,
+  html.simsor-mobile-app .events-grid-layout,
+  html.simsor-mobile-app .discover-grid-layout,
+  html.simsor-mobile-app .players-grid-layout {
     grid-template-columns: 1fr !important;
   }
 
-  html.zenex-mobile-app .chat-layout-container {
+  html.simsor-mobile-app .chat-layout-container {
     grid-template-columns: 1fr !important;
     height: auto !important;
   }
 }
 
 @media (min-width: 1025px) {
-  html.zenex-mobile-app .zenex-layout-grid,
-  html.zenex-mobile-app .zenex-layout-grid.sidebar-expanded,
-  html.zenex-mobile-app .zenex-layout-grid.sidebar-collapsed {
+  html.simsor-mobile-app .simsor-layout-grid,
+  html.simsor-mobile-app .simsor-layout-grid.sidebar-expanded,
+  html.simsor-mobile-app .simsor-layout-grid.sidebar-collapsed {
     grid-template-columns: 1fr !important;
   }
 
-  html.zenex-mobile-app .zenex-right-panel {
+  html.simsor-mobile-app .simsor-right-panel {
     display: none !important;
   }
 }

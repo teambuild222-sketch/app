@@ -90,8 +90,8 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onBackToLogin }) => {
         fullName,
         email: email.trim(),
       });
-      localStorage.setItem('zenex-sports', JSON.stringify(selectedSports));
-      localStorage.setItem('zenex-ent', JSON.stringify(selectedEnt));
+      localStorage.setItem('simsor-sports', JSON.stringify(selectedSports));
+      localStorage.setItem('simsor-ent', JSON.stringify(selectedEnt));
       window.location.href = '/';
     } catch (err) {
       setIsLoading(false);

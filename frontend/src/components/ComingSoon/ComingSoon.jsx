@@ -14,9 +14,9 @@ function ComingSoon({ compact = false }) {
   return (
     <div className={`coming-soon gradient-border${compact ? ' compact' : ''}`}>
       <span className="coming-soon-emoji">🚀</span>
-      <h3 className="coming-soon-title">Building Zenex Takes Time</h3>
+      <h3 className="coming-soon-title">Building Simsor Takes Time</h3>
       <p className="coming-soon-desc">
-        We are continuously improving Zenex and rolling out new features.
+        We are continuously improving Simsor and rolling out new features.
       </p>
 
       <ul className="coming-soon-features">

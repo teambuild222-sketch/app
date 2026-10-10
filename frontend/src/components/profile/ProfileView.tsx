@@ -98,7 +98,7 @@ type ProfileViewProps = {
 };
 
 // Taken usernames list for real-time validation mockup
-const TAKEN_USERNAMES = ['admin', 'neha', 'rahul', 'aisha', 'root', 'auth', 'sports', 'zenex', 'cricket', 'manager', 'football'];
+const TAKEN_USERNAMES = ['admin', 'neha', 'rahul', 'aisha', 'root', 'auth', 'sports', 'simsor', 'cricket', 'manager', 'football'];
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
   userId = null,
@@ -139,18 +139,18 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [isCreateCommunityOpen, setIsCreateCommunityOpen] = useState(false);
 
   // Dynamic Profile states synchronized with localStorage
-  const [fullName, setFullName] = useState(() => localStorage.getItem('zenex-fullname') || 'Admin User');
-  const [username, setUsername] = useState(() => localStorage.getItem('zenex-username') || 'admin');
-  const [bio, setBio] = useState(() => localStorage.getItem('zenex-bio') || 'Sports Enthusiast • Event Explorer');
-  const [location, setLocation] = useState(() => localStorage.getItem('zenex-location') || 'Hyderabad, India');
-  const [avatar, setAvatar] = useState(() => localStorage.getItem('zenex-avatar') || 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&h=300&q=80');
+  const [fullName, setFullName] = useState(() => localStorage.getItem('simsor-fullname') || 'Admin User');
+  const [username, setUsername] = useState(() => localStorage.getItem('simsor-username') || 'admin');
+  const [bio, setBio] = useState(() => localStorage.getItem('simsor-bio') || 'Sports Enthusiast • Event Explorer');
+  const [location, setLocation] = useState(() => localStorage.getItem('simsor-location') || 'Hyderabad, India');
+  const [avatar, setAvatar] = useState(() => localStorage.getItem('simsor-avatar') || 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&h=300&q=80');
   
   const [sports, setSports] = useState<string[]>(() => {
-    const saved = localStorage.getItem('zenex-sports');
+    const saved = localStorage.getItem('simsor-sports');
     return saved ? JSON.parse(saved) : ['Cricket', 'Football'];
   });
   const [entertainment, setEntertainment] = useState<string[]>(() => {
-    const saved = localStorage.getItem('zenex-ent');
+    const saved = localStorage.getItem('simsor-ent');
     return saved ? JSON.parse(saved) : ['Music', 'Food Events'];
   });
 
@@ -685,7 +685,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   // --------------------------------------------------
   // SHARE PROFILE ACTIONS
   // --------------------------------------------------
-  const profileUrl = `https://zenex.app/u/${displayUsername}`;
+  const profileUrl = `https://simsor.app/u/${displayUsername}`;
 
   const copyProfileLink = () => {
     navigator.clipboard.writeText(profileUrl)
@@ -708,7 +708,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   };
 
   const shareWhatsApp = () => {
-    const text = encodeURIComponent(`Check out my Zenex profile: ${profileUrl}`);
+    const text = encodeURIComponent(`Check out my Simsor profile: ${profileUrl}`);
     window.open(`https://wa.me/?text=${text}`, '_blank');
   };
 
@@ -717,12 +717,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   };
 
   const shareX = () => {
-    const text = encodeURIComponent(`Check out my premium Zenex sports and entertainment profile!`);
+    const text = encodeURIComponent(`Check out my premium Simsor sports and entertainment profile!`);
     window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(profileUrl)}`, '_blank');
   };
 
   const shareEmail = () => {
-    window.location.href = `mailto:?subject=Check%20out%20my%20Zenex%20profile&body=Here%20is%20my%20Zenex%20profile%20link%3A%20${encodeURIComponent(profileUrl)}`;
+    window.location.href = `mailto:?subject=Check%20out%20my%20Simsor%20profile&body=Here%20is%20my%20Simsor%20profile%20link%3A%20${encodeURIComponent(profileUrl)}`;
   };
 
   // Draw and Download Instagram Share Card using Canvas
@@ -766,7 +766,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     ctx.textAlign = 'center';
     ctx.font = 'bold 28px sans-serif';
     ctx.fillStyle = isDarkMode ? '#E9DCBE' : '#343434';
-    ctx.fillText('ZENEX', 270, 160);
+    ctx.fillText('SIMSOR', 270, 160);
 
     ctx.font = '600 11px sans-serif';
     ctx.fillStyle = isDarkMode ? '#8E8B82' : '#8E8B82';
@@ -921,7 +921,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       ctx.fillRect(qrX + 60, qrY + 115, 15, 15);
       ctx.fillRect(qrX + 90, qrY + 110, 25, 12);
 
-      // Draw Center Gold Zenex Star (Mock Branding)
+      // Draw Center Gold Simsor Star (Mock Branding)
       ctx.fillStyle = '#E9DCBE';
       ctx.fillRect(qrX + qrSize / 2 - 15, qrY + qrSize / 2 - 15, 30, 30);
       ctx.fillStyle = '#343434';
@@ -932,11 +932,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       ctx.font = '600 11px sans-serif';
       ctx.fillStyle = '#8E8B82';
       ctx.fillText('SCAN QR CODE TO VIEW PROFILE', cx, 770);
-      ctx.fillText('zenex.app/u/' + username, cx, 790);
+      ctx.fillText('simsor.app/u/' + username, cx, 790);
 
       // Export/Download trigger
       const link = document.createElement('a');
-      link.download = `${username}_zenex_profile.png`;
+      link.download = `${username}_simsor_profile.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
 
@@ -1796,7 +1796,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </button>
             <div className="ios-drawer-body">
               <h3 className="ios-drawer-title">Share Profile</h3>
-              <p className="ios-drawer-subtitle">Connect with other players outside Zenex</p>
+              <p className="ios-drawer-subtitle">Connect with other players outside Simsor</p>
 
               {/* URL preview display */}
               <div className="share-url-preview-box">
