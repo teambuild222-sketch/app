@@ -21,6 +21,7 @@ import {
 import type { HomeFeedPost } from '../HomeFeed/homeFeed';
 import { ME_AUTHOR_ID } from '../ExplorePage/exploreEvents';
 import { isBackendEnabled } from '../../api/client';
+import { listUsers } from '../../api/usersApi';
 import {
   addGroupMember,
   closeRemoteConversationRealtime,
@@ -134,6 +135,9 @@ export default function ChatPage({
   const [showNewChat, setShowNewChat] = useState(false);
   const [startingChatWith, setStartingChatWith] = useState<string | null>(null);
   const [contacts, setContacts] = useState<ChatMember[]>(() => getAvailableContacts());
+  const [peopleQuery, setPeopleQuery] = useState('');
+  const [peopleResults, setPeopleResults] = useState<ChatMember[] | null>(null);
+  const [peopleSearching, setPeopleSearching] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const longPressTimer = useRef<number | null>(null);
   const sessionLongPressTimer = useRef<number | null>(null);
@@ -147,6 +151,43 @@ export default function ChatPage({
   }, []);
 
   useEffect(() => subscribeChatStore(refresh), [refresh]);
+
+  // Server-side people search (username / full name) for the New message and
+  // New group pickers. Debounced so we don't hit the API on every keystroke.
+  useEffect(() => {
+    const term = peopleQuery.trim().replace(/^@/, '');
+    if (!term || !isBackendEnabled()) {
+      setPeopleResults(null);
+      setPeopleSearching(false);
+      return;
+    }
+    let cancelled = false;
+    setPeopleSearching(true);
+    const timer = window.setTimeout(async () => {
+      const users = await listUsers(term);
+      if (cancelled) return;
+      setPeopleResults(
+        users.map((u) => ({
+          id: u.id,
+          name: u.fullName || u.username,
+          avatar: u.avatarUrl,
+          role: 'Member',
+          username: u.username,
+        })),
+      );
+      setPeopleSearching(false);
+    }, 300);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [peopleQuery]);
+
+  useEffect(() => {
+    if (!showNewChat && !showCreateGroup) setPeopleQuery('');
+  }, [showNewChat, showCreateGroup]);
+
+  const pickerPeople = (peopleResults ?? contacts).filter((c) => c.id !== ME_AUTHOR_ID);
   useEffect(() => subscribeCommunities(refresh), [refresh]);
 
   const activeChat = useMemo(
@@ -651,21 +692,29 @@ export default function ChatPage({
             </label>
 
             <p className="chat-modal-label">Add members</p>
+            <PeopleSearchInput value={peopleQuery} onChange={setPeopleQuery} />
             <div className="chat-member-pick-list">
-              {contacts
-                .filter((c) => c.id !== ME_AUTHOR_ID)
-                .map((contact) => (
-                  <button
-                    key={contact.id}
-                    type="button"
-                    className={`chat-member-pick ${selectedMembers.includes(contact.id) ? 'selected' : ''}`}
-                    onClick={() => toggleMemberPick(contact.id)}
-                  >
-                    <img src={contact.avatar} alt="" />
-                    <span>{contact.name}</span>
-                    {selectedMembers.includes(contact.id) && <Check size={16} />}
-                  </button>
-                ))}
+              {peopleSearching && <p className="chat-modal-label">Searching…</p>}
+              {!peopleSearching && pickerPeople.length === 0 && (
+                <p className="chat-modal-label">
+                  {peopleQuery.trim() ? 'No one found with that name or username.' : 'No one to add yet.'}
+                </p>
+              )}
+              {pickerPeople.map((contact) => (
+                <button
+                  key={contact.id}
+                  type="button"
+                  className={`chat-member-pick ${selectedMembers.includes(contact.id) ? 'selected' : ''}`}
+                  onClick={() => toggleMemberPick(contact.id)}
+                >
+                  <img src={contact.avatar} alt="" />
+                  <span>
+                    {contact.name}
+                    {contact.username && <small className="chat-member-handle">@{contact.username}</small>}
+                  </span>
+                  {selectedMembers.includes(contact.id) && <Check size={16} />}
+                </button>
+              ))}
             </div>
 
             <button
@@ -691,25 +740,30 @@ export default function ChatPage({
               </button>
             </header>
 
-            <p className="chat-modal-label">Message someone</p>
+            <p className="chat-modal-label">Find people</p>
+            <PeopleSearchInput value={peopleQuery} onChange={setPeopleQuery} autoFocus />
             <div className="chat-member-pick-list">
-              {contacts.filter((c) => c.id !== ME_AUTHOR_ID).length === 0 && (
-                <p className="chat-modal-label">No one to message yet.</p>
+              {peopleSearching && <p className="chat-modal-label">Searching…</p>}
+              {!peopleSearching && pickerPeople.length === 0 && (
+                <p className="chat-modal-label">
+                  {peopleQuery.trim() ? 'No one found with that name or username.' : 'No one to message yet.'}
+                </p>
               )}
-              {contacts
-                .filter((c) => c.id !== ME_AUTHOR_ID)
-                .map((contact) => (
-                  <button
-                    key={contact.id}
-                    type="button"
-                    className="chat-member-pick"
-                    disabled={startingChatWith === contact.id}
-                    onClick={() => handleStartDirectMessage(contact.id)}
-                  >
-                    <img src={contact.avatar} alt="" />
-                    <span>{contact.name}</span>
-                  </button>
-                ))}
+              {pickerPeople.map((contact) => (
+                <button
+                  key={contact.id}
+                  type="button"
+                  className="chat-member-pick"
+                  disabled={startingChatWith === contact.id}
+                  onClick={() => handleStartDirectMessage(contact.id)}
+                >
+                  <img src={contact.avatar} alt="" />
+                  <span>
+                    {contact.name}
+                    {contact.username && <small className="chat-member-handle">@{contact.username}</small>}
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -857,6 +911,32 @@ export default function ChatPage({
 
 function findAvatar(chat: ChatConversation, authorId: string): string {
   return chat.members.find((m) => m.id === authorId)?.avatar ?? chat.avatar;
+}
+
+function PeopleSearchInput({
+  value,
+  onChange,
+  autoFocus = false,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  autoFocus?: boolean;
+}) {
+  return (
+    <div className="chat-search-wrap chat-people-search">
+      <Search size={16} />
+      <input
+        type="search"
+        autoFocus={autoFocus}
+        autoCapitalize="none"
+        autoCorrect="off"
+        placeholder="Search by name or @username"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label="Search people"
+      />
+    </div>
+  );
 }
 
 function AddMemberSection({

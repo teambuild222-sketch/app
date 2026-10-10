@@ -5,7 +5,7 @@ Not part of the original API_CONTRACT.md — added to unblock the frontend's
 Explore map from resolving a real host's identity for events created via the
 live API (see backend/PHASE2.md for context)."""
 from fastapi import APIRouter, HTTPException, Query, status
-from sqlalchemy import func, or_, select
+from sqlalchemy import case, func, or_, select
 
 from app.blocks import blocked_ids_for
 from app.deps import CurrentUser, DbSession
@@ -29,11 +29,23 @@ async def list_users(
     hidden = await blocked_ids_for(db, current_user.id)
     if hidden:
         query = query.where(User.id.notin_(hidden))
-    if q and q.strip():
-        like = f"%{q.strip().lower()}%"
+    term = (q or "").strip().lstrip("@").lower()
+    if term:
+        like = f"%{term}%"
         query = query.where(or_(func.lower(User.username).like(like), func.lower(User.full_name).like(like)))
 
-    result = await db.execute(query.order_by(User.full_name).limit(limit))
+    if term:
+        # Exact / prefix username matches first, then everything else by name.
+        rank = case(
+            (func.lower(User.username) == term, 0),
+            (func.lower(User.username).like(f"{term}%"), 1),
+            else_=2,
+        )
+        query = query.order_by(rank, User.full_name)
+    else:
+        query = query.order_by(User.full_name)
+
+    result = await db.execute(query.limit(limit))
     users = result.scalars().all()
     return [
         PublicUserProfile(

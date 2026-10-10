@@ -918,6 +918,17 @@
   flex: 1;
 }
 
+.chat-member-handle {
+  display: block;
+  font-size: 12px;
+  color: var(--home-bw-muted, #666);
+  margin-top: 2px;
+}
+
+.chat-people-search {
+  margin: 0 0 10px;
+}
+
 .chat-primary-btn {
   width: 100%;
   padding: 14px;

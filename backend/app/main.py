@@ -47,7 +47,12 @@ app.add_middleware(RateLimitMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
-    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1|10\.0\.2\.2)(:\d+)?|capacitor://localhost|ionic://localhost",
+    allow_origin_regex=(
+        r"https?://("
+        r"localhost|127\.0\.0\.1|10\.0\.2\.2"
+        r"|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}"
+        r")(:\d+)?|capacitor://localhost|ionic://localhost"
+    ),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

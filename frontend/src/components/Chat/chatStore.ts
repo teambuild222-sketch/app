@@ -76,6 +76,7 @@ export type ChatMember = {
   name: string;
   avatar: string;
   role?: string;
+  username?: string;
 };
 
 export type ChatConversation = {
@@ -825,6 +826,7 @@ export function getAvailableContacts(): ChatMember[] {
       name: u.fullName || u.username,
       avatar: u.avatarUrl,
       role: 'Member',
+      username: u.username,
     }));
   }
 

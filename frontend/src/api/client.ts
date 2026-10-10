@@ -49,7 +49,7 @@ export function getApiClient(): AxiosInstance {
 
   client = axios.create({
     baseURL: getApiBaseUrl(),
-    timeout: 20000,
+    timeout: 45000,
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
