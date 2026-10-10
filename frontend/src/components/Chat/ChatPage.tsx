@@ -1,16 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
-  Bell,
   BellOff,
   Check,
   ChevronRight,
   Image as ImageIcon,
-  MoreHorizontal,
+  MessageSquare,
   Paperclip,
   Pin,
+  Plus,
   Search,
   Send,
+  Sparkles,
   Trash2,
   UserMinus,
   UserPlus,
@@ -22,6 +23,7 @@ import type { HomeFeedPost } from '../HomeFeed/homeFeed';
 import { ME_AUTHOR_ID } from '../ExplorePage/exploreEvents';
 import toast from 'react-hot-toast';
 import { isBackendEnabled } from '../../api/client';
+import { bytesFromMb, PICK_MAX_MB, uploadKindFromFile } from '../../lib/mediaUpload';
 import { listUsers } from '../../api/usersApi';
 import {
   addGroupMember,
@@ -106,6 +108,11 @@ export default function ChatPage({
   const [mobileShowConversation, setMobileShowConversation] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(createGroupOpen);
 
+  const unreadTotal = useMemo(
+    () => conversations.reduce((acc, c) => acc + (c.unread ?? 0), 0),
+    [conversations],
+  );
+
   useEffect(() => {
     if (createGroupOpen) setShowCreateGroup(true);
   }, [createGroupOpen]);
@@ -133,17 +140,24 @@ export default function ChatPage({
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file || !activeChat) return;
-    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+    const kind = uploadKindFromFile(file);
+    if (!kind) {
       toast.error('Please choose a photo or a video');
       return;
     }
-    const limit = file.type.startsWith('video/') ? 50 : 15;
-    if (file.size > limit * 1024 * 1024) {
-      toast.error(`File is too large (max ${limit} MB)`);
+    const pickCap = PICK_MAX_MB[kind];
+    if (file.size > bytesFromMb(pickCap)) {
+      toast.error(
+        kind === 'image'
+          ? `That photo is too large (over ${pickCap} MB). Try a screenshot or a shorter clip.`
+          : `Video is too large (max ${pickCap} MB).`,
+      );
       return;
     }
     setIsSendingMedia(true);
-    const toastId = toast.loading(file.type.startsWith('video/') ? 'Sending video...' : 'Sending photo...');
+    const toastId = toast.loading(
+      kind === 'video' ? 'Sending video...' : isBackendEnabled() ? 'Preparing photo...' : 'Sending photo...',
+    );
     try {
       await sendMediaMessage(activeChat.id, file);
       toast.success('Sent', { id: toastId });
@@ -500,26 +514,56 @@ export default function ChatPage({
         {/* Conversation list */}
         <aside className="chat-list-panel">
           <div className="chat-list-toolbar">
+            <div className="chat-list-header-row">
+              <div className="chat-list-title-wrap">
+                <h2 className="chat-list-title">Messages</h2>
+                {unreadTotal > 0 && (
+                  <span className="chat-unread-total-badge">{unreadTotal}</span>
+                )}
+              </div>
+              <div className="chat-header-actions">
+                {isBackendEnabled() && (
+                  <button
+                    type="button"
+                    className="chat-icon-action-btn"
+                    title="New Direct Message"
+                    aria-label="New Direct Message"
+                    onClick={() => setShowNewChat(true)}
+                  >
+                    <UserPlus size={17} />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="chat-icon-action-btn"
+                  title="New Group"
+                  aria-label="New Group"
+                  onClick={() => setShowCreateGroup(true)}
+                >
+                  <Plus size={18} />
+                </button>
+              </div>
+            </div>
+
             <div className="chat-search-wrap">
-              <Search size={16} />
+              <Search size={15} className="chat-search-icon" />
               <input
                 type="search"
-                placeholder="Search conversations"
+                placeholder="Search conversations..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  className="chat-search-clear"
+                  onClick={() => setSearchQuery('')}
+                  aria-label="Clear search"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
-
-            {isBackendEnabled() && (
-              <button
-                type="button"
-                className="chat-icon-btn"
-                aria-label="New chat"
-                onClick={() => setShowNewChat(true)}
-              >
-                <UserPlus size={18} />
-              </button>
-            )}
 
             <div className="chat-inbox-filters" role="tablist" aria-label="Inbox filters">
               <button
@@ -529,7 +573,10 @@ export default function ChatPage({
                 className={`chat-inbox-filter${inboxFilter === 'chats' ? ' active' : ''}`}
                 onClick={() => setInboxFilter('chats')}
               >
-                Chats
+                <span>Direct Chats</span>
+                <span className="chat-filter-pill-count">
+                  {conversations.filter((c) => c.type !== 'community').length}
+                </span>
               </button>
               <button
                 type="button"
@@ -538,7 +585,10 @@ export default function ChatPage({
                 className={`chat-inbox-filter${inboxFilter === 'communities' ? ' active' : ''}`}
                 onClick={() => setInboxFilter('communities')}
               >
-                Communities
+                <span>Communities</span>
+                <span className="chat-filter-pill-count">
+                  {conversations.filter((c) => c.type === 'community').length}
+                </span>
               </button>
             </div>
           </div>
@@ -546,59 +596,86 @@ export default function ChatPage({
           <div className="chat-session-list">
             {filteredConversations.length === 0 ? (
               <div className="chat-inbox-empty">
+                <div className="chat-empty-icon-wrap">
+                  <MessageSquare size={26} />
+                </div>
+                <h3>{searchQuery ? 'No chats found' : inboxFilter === 'communities' ? 'No communities yet' : 'No chats yet'}</h3>
                 <p>
-                  {inboxFilter === 'communities'
-                    ? 'No joined communities yet. Join a public community from someone\'s profile.'
-                    : 'No chats yet. Start a conversation or create a group.'}
+                  {searchQuery
+                    ? `No conversations match "${searchQuery}".`
+                    : inboxFilter === 'communities'
+                    ? 'Explore and join public communities from organizer profiles.'
+                    : 'Start a direct chat with friends or create a crew to talk sports.'}
                 </p>
+                {!searchQuery && isBackendEnabled() && (
+                  <button
+                    type="button"
+                    className="chat-empty-action-btn"
+                    onClick={() => setShowNewChat(true)}
+                  >
+                    <UserPlus size={15} />
+                    <span>Start a chat</span>
+                  </button>
+                )}
               </div>
             ) : (
               filteredConversations.map((session) => {
-              const last = session.messages[session.messages.length - 1];
-              const pinned = isChatPinned(session.id);
-              const muted = isChatMuted(session.id);
-              return (
-                <div
-                  key={session.id}
-                  className={`chat-session-row-wrap${pinned ? ' is-pinned' : ''}${muted ? ' is-muted' : ''}`}
-                >
-                  <button
-                    type="button"
-                    className="chat-session-row"
-                    onClick={() => handleSessionClick(session.id)}
-                    onPointerDown={() => handleSessionPointerDown(session)}
-                    onPointerUp={handleSessionPointerUp}
-                    onPointerLeave={handleSessionPointerUp}
-                    onPointerCancel={handleSessionPointerUp}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      setSessionActionTarget(session);
-                    }}
+                const last = session.messages[session.messages.length - 1];
+                const pinned = isChatPinned(session.id);
+                const muted = isChatMuted(session.id);
+                const isSelected = activeChat?.id === session.id;
+                const hasUnread = Boolean(session.unread && session.unread > 0);
+                return (
+                  <div
+                    key={session.id}
+                    className={`chat-session-row-wrap${pinned ? ' is-pinned' : ''}${muted ? ' is-muted' : ''}${isSelected ? ' is-selected' : ''}`}
                   >
-                    <div className="chat-session-avatar-wrap">
-                      <img src={session.avatar} alt="" className="chat-session-avatar" />
-                      {session.online && <span className="chat-online-dot" />}
-                      {session.type !== 'dm' && (
-                        <span className="chat-group-badge">
-                          {session.type === 'event' ? 'EV' : session.type === 'community' ? 'CM' : 'GC'}
+                    <button
+                      type="button"
+                      className={`chat-session-row${isSelected ? ' is-active' : ''}${hasUnread ? ' has-unread' : ''}`}
+                      onClick={() => handleSessionClick(session.id)}
+                      onPointerDown={() => handleSessionPointerDown(session)}
+                      onPointerUp={handleSessionPointerUp}
+                      onPointerLeave={handleSessionPointerUp}
+                      onPointerCancel={handleSessionPointerUp}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        setSessionActionTarget(session);
+                      }}
+                    >
+                      <div className="chat-session-avatar-wrap">
+                        <img src={session.avatar} alt="" className="chat-session-avatar" />
+                        {session.online && <span className="chat-online-dot pulse" />}
+                        {session.type !== 'dm' && (
+                          <span className="chat-group-badge">
+                            {session.type === 'event' ? 'EV' : session.type === 'community' ? 'CM' : 'GC'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="chat-session-body">
+                        <div className="chat-session-name-row">
+                          <span className="chat-session-name">
+                            {pinned && <Pin size={11} className="chat-session-status-icon is-pinned" aria-hidden="true" />}
+                            {muted && <BellOff size={11} className="chat-session-status-icon is-muted" aria-hidden="true" />}
+                            {session.name}
+                          </span>
+                        </div>
+                        <span className="chat-session-preview">
+                          {last ? messagePreview(last) : 'No messages yet'}
                         </span>
-                      )}
-                    </div>
-                    <div className="chat-session-body">
-                      <span className="chat-session-name">
-                        {pinned && <Pin size={11} className="chat-session-status-icon" aria-hidden="true" />}
-                        {muted && <BellOff size={11} className="chat-session-status-icon" aria-hidden="true" />}
-                        {session.name}
-                      </span>
-                      <span className="chat-session-preview">
-                        {last ? messagePreview(last) : 'No messages yet'}
-                      </span>
-                    </div>
-                    <span className="chat-session-time">{last?.time ?? ''}</span>
-                  </button>
-                </div>
-              );
-            })
+                      </div>
+                      <div className="chat-session-meta">
+                        <span className="chat-session-time">{last?.time ?? ''}</span>
+                        {hasUnread && (
+                          <span className="chat-session-unread-badge">
+                            {(session.unread ?? 0) > 9 ? '9+' : session.unread}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  </div>
+                );
+              })
             )}
           </div>
         </aside>
@@ -613,7 +690,7 @@ export default function ChatPage({
                 aria-label="Back to list"
                 onClick={() => setMobileShowConversation(false)}
               >
-                <ArrowLeft size={20} />
+                <ArrowLeft size={19} />
               </button>
 
               <button
@@ -621,36 +698,89 @@ export default function ChatPage({
                 className="chat-thread-user"
                 onClick={() => activeChat.type !== 'dm' && setShowMembers(true)}
               >
-                <img src={activeChat.avatar} alt="" />
+                <div className="chat-thread-avatar-wrap">
+                  <img src={activeChat.avatar} alt="" />
+                  {activeChat.online && <span className="chat-online-dot pulse" />}
+                </div>
                 <div className="chat-thread-user-text">
                   <span className="chat-thread-name">{activeChat.name}</span>
-                  <span className="chat-thread-status">
-                    {isSomeoneTyping(activeChat.id)
-                      ? 'Typing…'
-                      : activeChat.type === 'dm'
-                        ? activeChat.online
-                          ? 'Active now'
-                          : 'Offline'
-                        : activeChat.subtitle}
-                  </span>
+                  <div className="chat-thread-status-row">
+                    {isSomeoneTyping(activeChat.id) ? (
+                      <span className="chat-typing-indicator">
+                        <span>typing</span>
+                        <span className="typing-dots">
+                          <span className="typing-dot" />
+                          <span className="typing-dot" />
+                          <span className="typing-dot" />
+                        </span>
+                      </span>
+                    ) : activeChat.type === 'dm' ? (
+                      activeChat.online ? (
+                        <span className="chat-status-active">
+                          <span className="status-live-dot" /> Active now
+                        </span>
+                      ) : (
+                        <span className="chat-status-offline">Offline</span>
+                      )
+                    ) : (
+                      <span className="chat-status-sub">{activeChat.subtitle}</span>
+                    )}
+                  </div>
                 </div>
                 {activeChat.type !== 'dm' && <ChevronRight size={16} className="chat-thread-chevron" />}
               </button>
 
-              {(activeChat.type === 'group' || activeChat.type === 'community') && isGroupAdmin(activeChat) && (
-                <button
-                  type="button"
-                  className="chat-icon-btn"
-                  aria-label="Manage members"
-                  onClick={() => setShowMembers(true)}
-                >
-                  <Users size={18} />
-                </button>
-              )}
+              <div className="chat-thread-actions">
+                {(activeChat.type === 'group' || activeChat.type === 'community') && (
+                  <button
+                    type="button"
+                    className="chat-icon-action-btn"
+                    aria-label="Manage members"
+                    title="Members"
+                    onClick={() => setShowMembers(true)}
+                  >
+                    <Users size={18} />
+                  </button>
+                )}
+              </div>
             </header>
 
             <div className="chat-messages-scroll">
-              {activeChat.messages.map((msg) => renderMessage(msg, activeChat))}
+              {activeChat.messages.length === 0 ? (
+                <div className="chat-thread-empty-state">
+                  <div className="chat-thread-empty-avatar-wrap">
+                    <img src={activeChat.avatar} alt="" className="chat-thread-empty-avatar" />
+                    <span className="chat-empty-sparkle">✨</span>
+                  </div>
+                  <h3>Say hi to {activeChat.name}</h3>
+                  <p>Start the conversation with a quick hello or plan your next meet.</p>
+                  <div className="chat-icebreakers">
+                    <button
+                      type="button"
+                      className="chat-icebreaker-chip"
+                      onClick={() => handleDraftChange('Hey! How’s it going? 👋')}
+                    >
+                      Hey! How’s it going? 👋
+                    </button>
+                    <button
+                      type="button"
+                      className="chat-icebreaker-chip"
+                      onClick={() => handleDraftChange('Dab up? 🤝')}
+                    >
+                      Dab up? 🤝
+                    </button>
+                    <button
+                      type="button"
+                      className="chat-icebreaker-chip"
+                      onClick={() => handleDraftChange('Catching any games this week? ⚽')}
+                    >
+                      Catching any games this week? ⚽
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                activeChat.messages.map((msg) => renderMessage(msg, activeChat))
+              )}
               <div ref={messagesEndRef} />
             </div>
 
@@ -658,19 +788,45 @@ export default function ChatPage({
               <div className="chat-composer-tools">
                 <button
                   type="button"
-                  className="chat-icon-btn"
+                  className={`chat-composer-tool-btn ${showShareMenu ? 'is-active' : ''}`}
                   aria-label="Attach"
                   onClick={() => setShowShareMenu((v) => !v)}
                 >
                   <Paperclip size={18} />
                 </button>
                 {showShareMenu && (
-                  <div className="chat-share-menu">
-                    <button type="button" onClick={() => { setShowPostPicker(true); setShowShareMenu(false); }}>
-                      <ImageIcon size={16} /> Share post
+                  <div className="chat-share-menu animate-slideUp">
+                    <button
+                      type="button"
+                      className="chat-share-menu-item"
+                      onClick={() => {
+                        mediaInputRef.current?.click();
+                        setShowShareMenu(false);
+                      }}
+                    >
+                      <div className="chat-share-menu-icon">
+                        <Video size={16} />
+                      </div>
+                      <div className="chat-share-menu-label">
+                        <strong>Photo or video</strong>
+                        <span>Send media from gallery</span>
+                      </div>
                     </button>
-                    <button type="button" onClick={() => { mediaInputRef.current?.click(); setShowShareMenu(false); }}>
-                      <Video size={16} /> Photo or video
+                    <button
+                      type="button"
+                      className="chat-share-menu-item"
+                      onClick={() => {
+                        setShowPostPicker(true);
+                        setShowShareMenu(false);
+                      }}
+                    >
+                      <div className="chat-share-menu-icon">
+                        <ImageIcon size={16} />
+                      </div>
+                      <div className="chat-share-menu-label">
+                        <strong>Share post</strong>
+                        <span>Share an event from feed</span>
+                      </div>
                     </button>
                   </div>
                 )}
@@ -684,20 +840,22 @@ export default function ChatPage({
                 onChange={handleMediaPicked}
                 disabled={isSendingMedia}
               />
-              <input
-                type="text"
-                className="chat-composer-input"
-                placeholder="Message..."
-                value={draft}
-                onChange={(e) => handleDraftChange(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              />
+              <div className="chat-composer-input-wrap">
+                <input
+                  type="text"
+                  className="chat-composer-input"
+                  placeholder="Message..."
+                  value={draft}
+                  onChange={(e) => handleDraftChange(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                />
+              </div>
 
               <button
                 type="button"
-                className="chat-send-btn"
+                className={`chat-send-btn ${draft.trim() ? 'is-active' : ''}`}
                 aria-label="Send"
-                disabled={!draft.trim()}
+                disabled={!draft.trim() || isSendingMedia}
                 onClick={handleSend}
               >
                 <Send size={16} />

@@ -48,8 +48,8 @@ class Settings(BaseSettings):
     supabase_storage_bucket: str = "media"
 
     upload_dir: str = "./uploads"
-    max_image_upload_mb: int = 15
-    max_video_upload_mb: int = 50
+    max_image_upload_mb: int = 25
+    max_video_upload_mb: int = 100
 
     # Phase 3 — email + abuse controls
     resend_api_key: str = ""

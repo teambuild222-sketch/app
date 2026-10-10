@@ -16,6 +16,12 @@ import type { HomeFeedPost } from '../HomeFeed/homeFeed';
 import { isBackendEnabled } from '../../api/client';
 import { uploadFile } from '../../api/uploadApi';
 import {
+  bytesFromMb,
+  prepareImageForUpload,
+  UPLOAD_MAX_MB,
+  uploadKindFromFile,
+} from '../../lib/mediaUpload';
+import {
   addGroupMemberRemote,
   createConversationRemote,
   deleteConversationRemote,
@@ -87,6 +93,7 @@ export type ChatConversation = {
   avatar: string;
   subtitle: string;
   online?: boolean;
+  unread?: number;
   eventId?: string;
   communityId?: string;
   visibility?: 'public' | 'private';
@@ -236,6 +243,7 @@ function remoteToChatConversation(dto: ConversationDto): ChatConversation {
     // realtime channel open (see chatRealtime.ts) — a reasonable proxy for
     // "online" without a separate app-wide presence system.
     online: dto.type === 'dm' ? (presence?.onlineUserIds.length ?? 0) > 0 : undefined,
+    unread: dto.unread ?? 0,
     adminId: dto.adminId ?? undefined,
     members,
     createdAt: new Date(dto.createdAt).getTime(),
@@ -987,9 +995,21 @@ export function sendVideoMessage(chatId: string, videoUrl: string, caption?: str
  * chat. Live backend: stored via /api/uploads and delivered to everyone in the
  * conversation. Resolves with the uploaded media type. */
 export async function sendMediaMessage(chatId: string, file: File): Promise<'image' | 'video'> {
-  const kind: 'image' | 'video' = file.type.startsWith('video/') ? 'video' : 'image';
-  if (!file.type.startsWith('image/') && kind !== 'video') {
+  const kind = uploadKindFromFile(file);
+  if (!kind) {
     throw new Error('Choose a photo or a video');
+  }
+
+  let toUpload = file;
+  if (kind === 'image' && isBackendEnabled()) {
+    toUpload = await prepareImageForUpload(file);
+  }
+  if (toUpload.size > bytesFromMb(UPLOAD_MAX_MB[kind])) {
+    throw new Error(
+      kind === 'video'
+        ? `Video is too large (max ${UPLOAD_MAX_MB.video} MB).`
+        : `Photo is still too large after resizing (max ${UPLOAD_MAX_MB.image} MB).`,
+    );
   }
 
   if (!isBackendEnabled()) {
@@ -1012,7 +1032,7 @@ export async function sendMediaMessage(chatId: string, file: File): Promise<'ima
     return kind;
   }
 
-  const uploaded = await uploadFile(file, file.name);
+  const uploaded = await uploadFile(toUpload, toUpload.name);
 
   if (chatId.startsWith('event-')) {
     appendEventChatMessage(chatId.replace('event-', ''), uploaded.url);
