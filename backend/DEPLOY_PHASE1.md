@@ -42,10 +42,10 @@ Set all five `R2_*` vars (see `.env.production.example`). Takes priority over Su
 
 ## Deploy API on Render (HTTPS)
 
-**GitHub repo for Render:** [Aditya-skar/Zennex](https://github.com/Aditya-skar/Zennex) (`main` has `backend/render.yaml`).
+**GitHub repo for Render:** [teambuild222-sketch/app](https://github.com/teambuild222-sketch/app) ([profile](https://github.com/teambuild222-sketch))
 
-1. Push latest `main` if needed: `git push origin main`
-2. [Render](https://dashboard.render.com) → **New** → **Blueprint** → select **`Aditya-skar/Zennex`**  
+1. Push latest `main`: `git push origin main --force-with-lease` (or `.\scripts\push-teambuild-main.ps1`) as **teambuild222-sketch**
+2. [Render](https://dashboard.render.com) → **New** → **Blueprint** → select **`teambuild222-sketch/app`**  
    (uses `backend/render.yaml`) **or** New Web Service → Docker → root `backend`.
 3. Set secret env vars from `backend/render-secrets.env` (generate with `python scripts/export_render_env.py`) or `.env.production.example`  
    (`DATABASE_URL`, `JWT_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `CORS_ORIGINS`).

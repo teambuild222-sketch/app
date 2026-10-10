@@ -1,37 +1,46 @@
-# Render — connect Aditya-skar/Zennex
+# Render — connect teambuild222-sketch/app
 
-Repo: **https://github.com/Aditya-skar/Zennex** (branch `main`)
+Repo: **https://github.com/teambuild222-sketch/app** (branch `main`)
 
-## 1. Blueprint
+Account: **https://github.com/teambuild222-sketch**
+
+## 1. Push code to GitHub
+
+From repo root (must be logged in as **teambuild222-sketch**):
+
+```powershell
+git push origin main --force-with-lease
+```
+
+Or run: `.\scripts\push-teambuild-main.ps1`
+
+Confirm: [backend/render.yaml](https://github.com/teambuild222-sketch/app/blob/main/backend/render.yaml) exists on `main`.
+
+## 2. Render Blueprint
 
 1. [dashboard.render.com](https://dashboard.render.com) → **New +** → **Blueprint**
-2. Connect GitHub → choose **Aditya-skar/Zennex**
-3. Approve **`backend/render.yaml`** → service name **`simsor-api`**
+2. Connect GitHub → allow **teambuild222-sketch** → choose **`app`**
+3. Approve **`backend/render.yaml`** → service **`simsor-api`**
 
-## 2. Environment (required)
-
-From your machine:
+## 3. Environment
 
 ```powershell
 cd backend
 .\.venv\Scripts\python.exe scripts\export_render_env.py
 ```
 
-Open **`render-secrets.env`** and add each line in Render → **simsor-api** → **Environment**.
+Paste **`render-secrets.env`** into Render → **Environment**.
 
-Minimum keys: `DATABASE_URL`, `JWT_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `CORS_ORIGINS`, `ADMIN_USERNAMES`.
+Required: `DATABASE_URL`, `JWT_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `CORS_ORIGINS`, `ADMIN_USERNAMES`.
 
-## 3. Deploy & verify
+## 4. Verify
 
-- Wait until status **Live**
-- `https://simsor-api.onrender.com/api/health` → `{"ok":true}`
+`https://simsor-api.onrender.com/api/health` → `{"ok":true}`
 
-## 4. App
-
-In `frontend/.env`:
+## 5. Frontend
 
 ```env
 VITE_API_URL=https://simsor-api.onrender.com
 ```
 
-Then: `npm run build` and `npx cap sync`.
+Then `npm run build` and `npx cap sync`.
