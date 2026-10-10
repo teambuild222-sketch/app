@@ -187,7 +187,11 @@ export default function ChatPage({
     if (!showNewChat && !showCreateGroup) setPeopleQuery('');
   }, [showNewChat, showCreateGroup]);
 
-  const pickerPeople = (peopleResults ?? contacts).filter((c) => c.id !== ME_AUTHOR_ID);
+  // Hide stale rows while a new query is in flight so results never belong to
+  // the previous search term.
+  const pickerPeople = peopleSearching
+    ? []
+    : (peopleResults ?? contacts).filter((c) => c.id !== ME_AUTHOR_ID);
   useEffect(() => subscribeCommunities(refresh), [refresh]);
 
   const activeChat = useMemo(
@@ -707,7 +711,7 @@ export default function ChatPage({
                   className={`chat-member-pick ${selectedMembers.includes(contact.id) ? 'selected' : ''}`}
                   onClick={() => toggleMemberPick(contact.id)}
                 >
-                  <img src={contact.avatar} alt="" />
+                  <img src={personAvatar(contact)} alt="" />
                   <span>
                     {contact.name}
                     {contact.username && <small className="chat-member-handle">@{contact.username}</small>}
@@ -757,7 +761,7 @@ export default function ChatPage({
                   disabled={startingChatWith === contact.id}
                   onClick={() => handleStartDirectMessage(contact.id)}
                 >
-                  <img src={contact.avatar} alt="" />
+                  <img src={personAvatar(contact)} alt="" />
                   <span>
                     {contact.name}
                     {contact.username && <small className="chat-member-handle">@{contact.username}</small>}
@@ -913,6 +917,18 @@ function findAvatar(chat: ChatConversation, authorId: string): string {
   return chat.members.find((m) => m.id === authorId)?.avatar ?? chat.avatar;
 }
 
+/** Initial-letter avatar for accounts that haven't uploaded a photo yet. */
+function personAvatar(contact: ChatMember): string {
+  if (contact.avatar) return contact.avatar;
+  const letter = (contact.name || contact.username || '?').trim().charAt(0).toUpperCase() || '?';
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72">` +
+    `<rect width="72" height="72" rx="36" fill="#2b2b2b"/>` +
+    `<text x="50%" y="50%" dy=".35em" text-anchor="middle" font-family="sans-serif" ` +
+    `font-size="32" font-weight="600" fill="#ffffff">${letter}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
 function PeopleSearchInput({
   value,
   onChange,
@@ -969,7 +985,7 @@ function AddMemberSection({
               className="chat-member-pick"
               onClick={() => addGroupMember(chatId, contact.id)}
             >
-              <img src={contact.avatar} alt="" />
+              <img src={personAvatar(contact)} alt="" />
               <span>{contact.name}</span>
             </button>
           ))}
