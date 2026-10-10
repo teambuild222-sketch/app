@@ -3,6 +3,7 @@ Async SQLAlchemy engine/session setup. Works with SQLite (dev) and
 Postgres/asyncpg (staging/prod) via the same code path — only DATABASE_URL
 changes between environments.
 """
+import ssl
 from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -12,12 +13,21 @@ from app.config import get_settings
 
 settings = get_settings()
 
-# SQLite: threaded/async dev. Postgres (Supabase/Neon): SSL required from cloud hosts (e.g. Render).
+
+def _postgres_connect_args() -> dict:
+    if not settings.database_url.startswith("postgresql"):
+        return {}
+    # Supabase from cloud hosts (Render) needs TLS; local dev often connects without extra ssl args.
+    if settings.is_production:
+        return {"ssl": ssl.create_default_context()}
+    return {}
+
+
 _connect_args: dict = {}
 if settings.database_url.startswith("sqlite"):
     _connect_args["check_same_thread"] = False
-elif settings.database_url.startswith("postgresql"):
-    _connect_args["ssl"] = True
+else:
+    _connect_args.update(_postgres_connect_args())
 
 engine = create_async_engine(settings.database_url, echo=False, connect_args=_connect_args)
 

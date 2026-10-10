@@ -47,10 +47,12 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 def _engine_connect_args() -> dict:
+    import ssl as _ssl
+
     if settings.database_url.startswith("sqlite"):
         return {"check_same_thread": False}
-    if settings.database_url.startswith("postgresql"):
-        return {"ssl": True}
+    if settings.database_url.startswith("postgresql") and settings.is_production:
+        return {"ssl": _ssl.create_default_context()}
     return {}
 
 
