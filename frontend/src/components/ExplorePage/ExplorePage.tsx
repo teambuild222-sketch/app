@@ -67,6 +67,7 @@ import { getDabbedUpIds, DAB_UPS_CHANGED_EVENT } from '../profile/profileData';
 import { PEOPLE_LISTS_CHANGED_EVENT } from '../HomeFeed/audienceLists';
 import type { MapEventScope } from '../Navbar';
 import { isBackendEnabled } from '../../api/client';
+import { LIVE_SYNC_EVENT } from '../../lib/useLiveSync';
 import { listEvents } from '../../api/eventsApi';
 import { fetchPublicUser } from '../../api/usersApi';
 import type { EventDto } from '../../api/types';
@@ -295,9 +296,9 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
   // pre-existing) whenever the viewer's real location was far from that
   // cluster. The backend still supports radius filtering for when a real
   // "nearby" control is added.
-  const fetchLiveEvents = useCallback(async (categoryOverride?: 'Sports' | 'Entertainment') => {
+  const fetchLiveEvents = useCallback(async (categoryOverride?: 'Sports' | 'Entertainment', silent = false) => {
     if (!backendEnabled) return;
-    setIsLoadingLiveEvents(true);
+    if (!silent) setIsLoadingLiveEvents(true);
     try {
       const dtos = await listEvents({ mainCategory: categoryOverride ?? activeMainCategory });
       const fetched = dtos.map(eventDtoToExploreEvent);
@@ -317,11 +318,19 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
         setEvents((prev) => [...prev]);
       }
     } catch {
-      toast.error('Could not load events from the server.');
+      if (!silent) toast.error('Could not load events from the server.');
     } finally {
       setIsLoadingLiveEvents(false);
     }
   }, [backendEnabled, activeMainCategory]);
+
+  // Real-time: new events / joins from other people appear without a reload.
+  useEffect(() => {
+    if (!backendEnabled) return undefined;
+    const onTick = () => void fetchLiveEvents(undefined, true);
+    window.addEventListener(LIVE_SYNC_EVENT, onTick);
+    return () => window.removeEventListener(LIVE_SYNC_EVENT, onTick);
+  }, [backendEnabled, fetchLiveEvents]);
 
   // Refetch on mount and whenever the category tab changes.
   useEffect(() => {

@@ -5,12 +5,13 @@ import HomePostCard from '../HomeFeed/HomePostCard';
 import DiscoverGridTile from './DiscoverGridTile';
 import DiscoverPostScrollView from './DiscoverPostScrollView';
 import {
-  HOME_FEED_POSTS,
   type HomeFeedPost,
   getPostAuthor,
 } from '../HomeFeed/homeFeed';
-import { loadUserPosts } from '../HomeFeed/publishContent';
-import { loadFeedPosts } from '../HomeFeed/feedSource';
+import { getInitialFeedPosts, loadFeedPosts } from '../HomeFeed/feedSource';
+import { listUsers } from '../../api/usersApi';
+import { LIVE_SYNC_EVENT } from '../../lib/useLiveSync';
+import { usePeopleVersion } from '../../lib/usePeople';
 import {
   FEED_CHANGED_EVENT,
   trackCategoryInteraction,
@@ -23,7 +24,13 @@ import {
 import { toast } from 'react-hot-toast';
 import { isBackendEnabled } from '../../api/client';
 import { requestDabUp } from '../../api/socialApi';
-import { EVENT_ORGANIZERS, ME_AUTHOR_ID, ORGANIZER_BY_ID } from '../ExplorePage/exploreEvents';
+import {
+  EVENT_ORGANIZERS,
+  ME_AUTHOR_ID,
+  cacheRemoteOrganizer,
+  getCurrentViewerId,
+  resolveOrganizer,
+} from '../ExplorePage/exploreEvents';
 import { isAllowedFeedCategory } from '../ExplorePage/eventMapIcons';
 import './DiscoverPage.css';
 
@@ -74,16 +81,42 @@ export const DiscoverPage: React.FC<DiscoverPageProps> = ({
   const [previewPost, setPreviewPost] = useState<HomeFeedPost | null>(null);
   const [scrollFeedPostId, setScrollFeedPostId] = useState<string | null>(null);
 
-  const [rawPosts, setRawPosts] = useState<HomeFeedPost[]>(() => [
-    ...loadUserPosts(),
-    ...HOME_FEED_POSTS,
-  ]);
+  usePeopleVersion();
+  const [rawPosts, setRawPosts] = useState<HomeFeedPost[]>(() => getInitialFeedPosts());
+  const [liveIds, setLiveIds] = useState<string[]>([]);
+
+  // Real people to dab up with: everyone signed up (refreshed in the background).
+  useEffect(() => {
+    if (!isBackendEnabled()) return undefined;
+    let cancelled = false;
+    const load = () => {
+      void listUsers()
+        .then((users) => {
+          if (cancelled) return;
+          const me = getCurrentViewerId();
+          const others = users.filter((u) => u.id !== me);
+          others.forEach((u) => cacheRemoteOrganizer(u.id, u));
+          setLiveIds((prev) => {
+            const next = others.map((u) => u.id);
+            return prev.join(',') === next.join(',') ? prev : next;
+          });
+        })
+        .catch(() => {});
+    };
+    load();
+    window.addEventListener(LIVE_SYNC_EVENT, load);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(LIVE_SYNC_EVENT, load);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     loadFeedPosts()
       .then((posts) => {
-        if (!cancelled) setRawPosts(posts);
+        if (cancelled) return;
+        setRawPosts((prev) => (JSON.stringify(prev) === JSON.stringify(posts) ? prev : posts));
       })
       .catch(() => {});
     return () => {
@@ -105,10 +138,11 @@ export const DiscoverPage: React.FC<DiscoverPageProps> = ({
 
   const recommendedPeople = useMemo(() => {
     void followTick;
-    return EVENT_ORGANIZERS.filter(
+    const pool = isBackendEnabled() ? liveIds.map((id) => resolveOrganizer(id)) : EVENT_ORGANIZERS;
+    return pool.filter(
       (org) => org.id !== ME_AUTHOR_ID && getDabUpStatus(org.id) !== 'dabbed_up',
     ).slice(0, 8);
-  }, [followTick]);
+  }, [followTick, liveIds]);
 
   // Refresh cards when a pending Dab Up gets accepted.
   useEffect(() => {
@@ -123,7 +157,7 @@ export const DiscoverPage: React.FC<DiscoverPageProps> = ({
 
   const handleDabUp = (organizerId: string) => {
     if (getDabUpStatus(organizerId) !== 'none') return;
-    const person = ORGANIZER_BY_ID[organizerId];
+    const person = resolveOrganizer(organizerId);
     const run = async () => {
       if (isBackendEnabled()) {
         const status = await requestDabUp(organizerId);
@@ -220,7 +254,7 @@ export const DiscoverPage: React.FC<DiscoverPageProps> = ({
                   >
                     {person.name}
                   </button>
-                  <span className="discover-person-role">{person.role}</span>
+                  <span className="discover-person-role">{person.username ? `@${person.username}` : person.role}</span>
                 </div>
                 <button
                   type="button"

@@ -16,15 +16,19 @@ import {
   ORGANIZER_BY_ID,
   ME_AUTHOR_ID,
   getCurrentUserOrganizer,
+  getCurrentViewerId,
   type EventOrganizer,
 } from '../ExplorePage/exploreEvents';
 import { HOME_FEED_POSTS, type HomeFeedPost, isEventPast } from '../HomeFeed/homeFeed';
 import { loadUserPosts } from '../HomeFeed/publishContent';
+import { getLiveCachedPosts } from '../HomeFeed/feedSource';
 import { getFollowing } from '../HomeFeed/feedAlgorithm';
 import { getRankForXp, type RankProgress } from './rankConfig';
 import { MAX_PROFILE_TAGS, TAG_BY_ID } from './tagsConfig';
 import { isBackendEnabled } from '../../api/client';
 import { getServerDabbedUpIds } from '../../api/dabUpsApi';
+import { getCachedStats } from '../../api/statsApi';
+import { resolveOrganizer } from '../ExplorePage/exploreEvents';
 
 /* ============================================================
    1. DAB UPS (mutual connections)
@@ -94,10 +98,15 @@ export function getDabbedUpIds(): string[] {
 }
 
 export function getDabUpsCount(): number {
+  if (isBackendEnabled()) {
+    const real = getCachedStats();
+    if (real) return real.dabUps;
+  }
   return getDabbedUpIds().length;
 }
 
 export function getDabbedUpPeople(): EventOrganizer[] {
+  if (isBackendEnabled()) return getDabbedUpIds().map((id) => resolveOrganizer(id));
   return getDabbedUpIds()
     .map((id) => ORGANIZER_BY_ID[id])
     .filter(Boolean);
@@ -112,6 +121,11 @@ export function getDabbedUpPeople(): EventOrganizer[] {
  * members you boost tend to boost back (stable, deterministic subset).
  */
 export function getBoostersCount(): number {
+  if (isBackendEnabled()) {
+    const real = getCachedStats();
+    if (real) return real.followers;
+    return 0;
+  }
   const dabbed = new Set(getDabbedUpIds());
   const boostBacks = getFollowing().filter((id, index) => {
     if (dabbed.has(id)) return false;
@@ -121,6 +135,10 @@ export function getBoostersCount(): number {
 }
 
 export function getBoostingCount(): number {
+  if (isBackendEnabled()) {
+    const real = getCachedStats();
+    if (real) return real.following;
+  }
   return getFollowing().length;
 }
 
@@ -141,7 +159,17 @@ function getJoinedEventIds(): string[] {
 }
 
 function getAllKnownPosts(): HomeFeedPost[] {
+  if (isBackendEnabled()) return getLiveCachedPosts();
   return [...loadUserPosts(), ...HOME_FEED_POSTS];
+}
+
+/** Posts the signed-in user authored (local store in mock mode, real API posts when live). */
+function getOwnPosts(): HomeFeedPost[] {
+  if (isBackendEnabled()) {
+    const viewerId = getCurrentViewerId();
+    return getLiveCachedPosts().filter((p) => p.authorId === viewerId);
+  }
+  return getOwnPosts();
 }
 
 export type EventsJoinedStats = {
@@ -203,6 +231,8 @@ export type HostingStats = {
 
 /** Deterministic per-event rating so hosted events show stable stars. */
 function eventRating(eventId: string): { rating: number; count: number } {
+  // No rating feature exists server-side yet: never invent stars for real events.
+  if (isBackendEnabled()) return { rating: 0, count: 0 };
   let h = 0;
   for (let i = 0; i < eventId.length; i += 1) {
     h = (h * 31 + eventId.charCodeAt(i)) >>> 0;
@@ -212,7 +242,7 @@ function eventRating(eventId: string): { rating: number; count: number } {
 
 /** Events created by the current user via the app are "official" hosted events. */
 export function getHostingStats(): HostingStats {
-  const hosted = loadUserPosts().filter((p) => p.authorId === ME_AUTHOR_ID);
+  const hosted = getOwnPosts();
   const events: HostedEventRating[] = hosted.map((post) => {
     const { rating, count } = eventRating(post.eventId);
     return { post, rating: Math.round(rating * 10) / 10, ratingCount: count };
@@ -392,7 +422,7 @@ function hashUserId(id: string): number {
 
 export function getProfileOrganizer(userId: string | null | undefined): EventOrganizer {
   if (isOwnProfileUser(userId)) return getCurrentUserOrganizer();
-  return ORGANIZER_BY_ID[userId!] ?? EVENT_ORGANIZERS[0];
+  return resolveOrganizer(userId!);
 }
 
 export function getMemberPosts(userId: string): HomeFeedPost[] {
@@ -421,8 +451,20 @@ export function getMemberHostingStats(userId: string): HostingStats {
 }
 
 export function getMemberEventsJoinedStats(userId: string): EventsJoinedStats {
-  const h = hashUserId(userId);
   const authorPosts = getMemberPosts(userId);
+  if (isBackendEnabled()) {
+    const real = getCachedStats(userId);
+    const byCat = new Map<string, number>();
+    for (const post of authorPosts) byCat.set(post.category, (byCat.get(post.category) ?? 0) + 1);
+    return {
+      attendedTotal: real?.eventsJoined ?? 0,
+      registeredUpcoming: 0,
+      byCategory: [...byCat.entries()]
+        .map(([category, count]) => ({ category, count }))
+        .sort((a, b) => b.count - a.count),
+    };
+  }
+  const h = hashUserId(userId);
   const byCategory = new Map<string, number>();
 
   for (const post of authorPosts) {
@@ -455,6 +497,14 @@ export function getMemberSocialCounts(userId: string): {
   boosters: number;
   boosting: number;
 } {
+  if (isBackendEnabled()) {
+    const real = getCachedStats(userId);
+    return {
+      dabUps: real?.dabUps ?? 0,
+      boosters: real?.followers ?? 0,
+      boosting: real?.following ?? 0,
+    };
+  }
   const h = hashUserId(userId);
   const posts = getMemberPosts(userId).length;
   return {

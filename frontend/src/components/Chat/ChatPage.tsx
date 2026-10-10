@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import type { HomeFeedPost } from '../HomeFeed/homeFeed';
 import { ME_AUTHOR_ID } from '../ExplorePage/exploreEvents';
+import toast from 'react-hot-toast';
 import { isBackendEnabled } from '../../api/client';
 import { listUsers } from '../../api/usersApi';
 import {
@@ -43,10 +44,9 @@ import {
   openRemoteConversationRealtime,
   removeGroupMember,
   REACTION_EMOJIS,
-  SAMPLE_VIDEOS,
   sendSharedPost,
   sendTextMessage,
-  sendVideoMessage,
+  sendMediaMessage,
   subscribeChatStore,
   toggleChatMute,
   toggleChatPin,
@@ -127,7 +127,32 @@ export default function ChatPage({
   const [showMembers, setShowMembers] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showPostPicker, setShowPostPicker] = useState(false);
-  const [showVideoPicker, setShowVideoPicker] = useState(false);
+  const mediaInputRef = useRef<HTMLInputElement>(null);
+  const [isSendingMedia, setIsSendingMedia] = useState(false);
+  const handleMediaPicked = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !activeChat) return;
+    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+      toast.error('Please choose a photo or a video');
+      return;
+    }
+    const limit = file.type.startsWith('video/') ? 50 : 15;
+    if (file.size > limit * 1024 * 1024) {
+      toast.error(`File is too large (max ${limit} MB)`);
+      return;
+    }
+    setIsSendingMedia(true);
+    const toastId = toast.loading(file.type.startsWith('video/') ? 'Sending video...' : 'Sending photo...');
+    try {
+      await sendMediaMessage(activeChat.id, file);
+      toast.success('Sent', { id: toastId });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not send the file', { id: toastId });
+    } finally {
+      setIsSendingMedia(false);
+    }
+  };
   const [reactionTarget, setReactionTarget] = useState<{ chatId: string; messageId: string } | null>(null);
   const [groupName, setGroupName] = useState('');
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
@@ -644,13 +669,21 @@ export default function ChatPage({
                     <button type="button" onClick={() => { setShowPostPicker(true); setShowShareMenu(false); }}>
                       <ImageIcon size={16} /> Share post
                     </button>
-                    <button type="button" onClick={() => { setShowVideoPicker(true); setShowShareMenu(false); }}>
-                      <Video size={16} /> Share video
+                    <button type="button" onClick={() => { mediaInputRef.current?.click(); setShowShareMenu(false); }}>
+                      <Video size={16} /> Photo or video
                     </button>
                   </div>
                 )}
               </div>
 
+              <input
+                ref={mediaInputRef}
+                type="file"
+                accept="image/*,video/*"
+                style={{ display: 'none' }}
+                onChange={handleMediaPicked}
+                disabled={isSendingMedia}
+              />
               <input
                 type="text"
                 className="chat-composer-input"
@@ -851,34 +884,6 @@ export default function ChatPage({
                 </button>
               ))}
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Share video picker */}
-      {showVideoPicker && activeChat && (
-        <div className="chat-modal-overlay" onClick={() => setShowVideoPicker(false)}>
-          <div className="chat-modal" onClick={(e) => e.stopPropagation()}>
-            <header className="chat-modal-header">
-              <h3>Share a video</h3>
-              <button type="button" className="chat-icon-btn" onClick={() => setShowVideoPicker(false)}>
-                <X size={18} />
-              </button>
-            </header>
-            {SAMPLE_VIDEOS.map((v) => (
-              <button
-                key={v.url}
-                type="button"
-                className="chat-video-pick"
-                onClick={() => {
-                  sendVideoMessage(activeChat.id, v.url, v.label);
-                  setShowVideoPicker(false);
-                }}
-              >
-                <Video size={16} />
-                {v.label}
-              </button>
-            ))}
           </div>
         </div>
       )}

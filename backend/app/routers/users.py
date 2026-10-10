@@ -10,7 +10,8 @@ from sqlalchemy import case, func, or_, select
 from app.blocks import blocked_ids_for
 from app.deps import CurrentUser, DbSession
 from app.models import Event, User
-from app.schemas import PublicUserProfile
+from app.routers.profile import compute_user_stats
+from app.schemas import MeStatsDto, PublicUserProfile
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -54,6 +55,15 @@ async def list_users(
         )
         for u in users
     ]
+
+
+@router.get("/{user_id}/stats", response_model=MeStatsDto)
+async def get_public_stats(user_id: str, current_user: CurrentUser, db: DbSession) -> MeStatsDto:
+    """Follower / following / dab-up / event counts for any profile (counts only)."""
+    exists = (await db.execute(select(User.id).where(User.id == user_id))).scalar_one_or_none()
+    if exists is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return await compute_user_stats(db, user_id)
 
 
 @router.get("/{user_id}/public", response_model=PublicUserProfile)

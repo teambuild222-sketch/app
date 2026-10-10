@@ -286,9 +286,46 @@ export const API_ROUTES = {
   posts: '/api/posts',
   postById: (id: string) => `/api/posts/${id}`,
   postLike: (id: string) => `/api/posts/${id}/like`,
+  postComments: (id: string) => `/api/posts/${id}/comments`,
+  postCommentById: (postId: string, commentId: string) => `/api/posts/${postId}/comments/${commentId}`,
+  notifications: '/api/notifications',
+  notificationsRead: '/api/notifications/read',
   followingMine: '/api/follows/mine',
   followUser: (userId: string) => `/api/follows/${userId}`,
   affinityTrack: '/api/affinity/track',
   affinityMine: '/api/affinity/mine',
   uploads: '/api/uploads',
 } as const;
+
+export type NotificationDto = {
+  id: string;
+  title: string;
+  body: string;
+  data: Record<string, string>;
+  read: boolean;
+  createdAt: string;
+};
+
+export type NotificationsResponseDto = {
+  items: NotificationDto[];
+  unread: number;
+};
+
+export type CommentDto = {
+  id: string;
+  postId: string;
+  authorId: string;
+  authorName: string;
+  authorUsername: string;
+  authorAvatar: string;
+  text: string;
+  createdAt: string;
+};
+
+export type MeStatsDto = {
+  dabUps: number;
+  following: number;
+  followers: number;
+  eventsJoined: number;
+  eventsHosted: number;
+};

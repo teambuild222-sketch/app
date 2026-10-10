@@ -420,3 +420,35 @@ class UserDeviceToken(Base):
     platform: Mapped[str] = mapped_column(String(10), primary_key=True)  # ios | android | web
     token: Mapped[str] = mapped_column(Text, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
+
+
+def _new_notification_id() -> str:
+    return f"ntf_{uuid.uuid4().hex[:16]}"
+
+
+def _new_comment_id() -> str:
+    return f"cmt_{uuid.uuid4().hex[:14]}"
+
+
+class Notification(Base):
+    """In-app notification feed entry (mirrors every push sent via app/push.py)."""
+
+    __tablename__ = "notifications"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_new_notification_id)
+    user_id: Mapped[str] = mapped_column(String(32), ForeignKey("users.id"), index=True, nullable=False)
+    title: Mapped[str] = mapped_column(String(160), nullable=False, default="")
+    body: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    data: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, index=True)
+
+
+class PostComment(Base):
+    __tablename__ = "post_comments"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_new_comment_id)
+    post_id: Mapped[str] = mapped_column(String(32), ForeignKey("posts.id"), index=True, nullable=False)
+    author_id: Mapped[str] = mapped_column(String(32), ForeignKey("users.id"), nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, index=True)

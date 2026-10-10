@@ -1,3 +1,4 @@
+import { isBackendEnabled } from '../../api/client';
 import { ME_AUTHOR_ID, getDefaultCommunityAvatarForCreator } from '../ExplorePage/exploreEvents';
 import { createCommunityChat, ensureJoinedCommunityChat } from '../Chat/chatStore';
 
@@ -124,6 +125,7 @@ function saveMemberships(memberships: CommunityMembership[]): void {
 }
 
 function seedDemoJoinedCommunity(): void {
+  if (isBackendEnabled()) return; // real accounts never get the demo community
   if (localStorage.getItem(DEMO_SEEDED_KEY) === '1') return;
 
   const communities = loadCommunities();

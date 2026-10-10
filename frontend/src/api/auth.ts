@@ -3,6 +3,7 @@
  */
 import { apiPost, getAuthToken, isBackendEnabled, setAuthToken } from './client';
 import { API_ROUTES, type AuthSession, type UserProfile } from './types';
+import { clearStatsCache } from './statsApi';
 import { hydrateJoinedEvents } from './joinsApi';
 import { hydrateDabUps } from './dabUpsApi';
 import { hydrateCommunities } from './communitiesApi';
@@ -162,6 +163,11 @@ export function clearLocalSession(): void {
   setAuthToken(null);
   syncRealtimeAuth(null);
   localStorage.removeItem(AUTH_FLAG_KEY);
+  if (isBackendEnabled()) {
+    // Never let the next account to sign in on this device inherit this one's identity / counters.
+    Object.values(PROFILE_KEYS).forEach((key) => localStorage.removeItem(key));
+    clearStatsCache();
+  }
   emitAuthChanged();
 }
 

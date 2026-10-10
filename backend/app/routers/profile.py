@@ -40,7 +40,10 @@ async def update_me(patch: ProfilePatch, current_user: CurrentUser, db: DbSessio
 
 @router.get("/stats", response_model=MeStatsDto)
 async def my_stats(current_user: CurrentUser, db: DbSession) -> MeStatsDto:
-    uid = current_user.id
+    return await compute_user_stats(db, current_user.id)
+
+
+async def compute_user_stats(db: DbSession, uid: str) -> MeStatsDto:
     dab = (
         await db.execute(
             select(func.count())

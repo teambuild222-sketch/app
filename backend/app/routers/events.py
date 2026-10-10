@@ -1,4 +1,4 @@
-"""GET/POST/DELETE /api/events — matches API_CONTRACT.md's Events section."""
+"""GET/POST/DELETE /api/events â€” matches API_CONTRACT.md's Events section."""
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 
@@ -6,7 +6,7 @@ from app.affinity import record_interaction
 from app.deps import CurrentUser, DbSession
 from app.event_chat import ensure_event_conversation
 from app.geo import bounding_box, haversine_km
-from app.models import Conversation, Event, EventAttendee, PeopleList, Post, PostLike
+from app.models import Conversation, Event, EventAttendee, PeopleList, Post, PostComment, PostLike
 from app.push import notify_users
 from app.schemas import EventCreate, EventDto, JoinEventResponse, JoinedEventsResponse
 
@@ -231,6 +231,7 @@ async def delete_event(event_id: str, current_user: CurrentUser, db: DbSession) 
     )
     if post_ids:
         await db.execute(PostLike.__table__.delete().where(PostLike.post_id.in_(post_ids)))
+        await db.execute(PostComment.__table__.delete().where(PostComment.post_id.in_(post_ids)))
         await db.execute(Post.__table__.delete().where(Post.id.in_(post_ids)))
 
     await db.execute(EventAttendee.__table__.delete().where(EventAttendee.event_id == event_id))

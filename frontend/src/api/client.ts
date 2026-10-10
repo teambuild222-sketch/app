@@ -109,6 +109,8 @@ export async function apiUpload<T>(url: string, file: File | Blob, filename?: st
   form.append('file', file, filename ?? (file instanceof File ? file.name : 'upload'));
   const { data } = await getApiClient().post<T>(url, form, {
     headers: { 'Content-Type': 'multipart/form-data' },
+    // Videos can be tens of MB on a mobile connection, so don't use the 45s default.
+    timeout: 300000,
   });
   return data;
 }

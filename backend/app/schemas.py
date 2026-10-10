@@ -530,3 +530,40 @@ class GoogleAuthBody(BaseModel):
 class AppleAuthBody(BaseModel):
     idToken: str
     fullName: str | None = None
+
+
+class NotificationDto(BaseModel):
+    id: str
+    title: str
+    body: str
+    data: dict = Field(default_factory=dict)
+    read: bool = False
+    createdAt: datetime
+
+
+class NotificationsResponse(BaseModel):
+    items: list[NotificationDto]
+    unread: int
+
+
+class CommentDto(BaseModel):
+    id: str
+    postId: str
+    authorId: str
+    authorName: str = ""
+    authorUsername: str = ""
+    authorAvatar: str = ""
+    text: str
+    createdAt: datetime
+
+
+class CommentCreate(BaseModel):
+    text: str
+
+    @field_validator("text")
+    @classmethod
+    def not_empty(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("comment can't be empty")
+        return v[:1000]

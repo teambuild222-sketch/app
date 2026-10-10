@@ -1,9 +1,8 @@
 import {
-  EVENT_ORGANIZERS,
-  ORGANIZER_BY_ID,
   ME_AUTHOR_ID,
   getCurrentUserOrganizer,
   getCurrentViewerId,
+  resolveOrganizer,
   type EventOrganizer,
 } from '../ExplorePage/exploreEvents';
 import type { PostDto } from '../../api/types';
@@ -109,13 +108,12 @@ export function isMe(authorId: string): boolean {
 }
 
 export function getPostAuthor(post: HomeFeedPost): EventOrganizer {
-  if (isMe(post.authorId)) return getCurrentUserOrganizer();
-  return ORGANIZER_BY_ID[post.authorId] ?? EVENT_ORGANIZERS[0];
+  return resolveOrganizer(post.authorId);
 }
 
 export function getPostHost(post: HomeFeedPost): EventOrganizer | null {
   if (!post.isReshared || !post.originalHostId) return null;
-  return ORGANIZER_BY_ID[post.originalHostId] ?? null;
+  return resolveOrganizer(post.originalHostId);
 }
 
 export function isEventPast(post: HomeFeedPost, now: Date = new Date()): boolean {

@@ -30,6 +30,8 @@ import {
   recordInteraction,
 } from './feedAlgorithm';
 import PostCountdown from './PostCountdown';
+import PostComments from './PostComments';
+import { usePeopleVersion } from '../../lib/usePeople';
 import {
   isJoined as checkJoined,
   toggleJoinAsync,
@@ -78,6 +80,10 @@ export const HomePostCard: React.FC<HomePostCardProps> = ({
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [commentCount, setCommentCount] = useState(post.comments);
+  usePeopleVersion(); // re-render when a real author's name/photo finishes loading
+  const live = isBackendEnabled();
   const [liked, setLiked] = useState(() => post.likedByMe ?? false);
   const [likeCount, setLikeCount] = useState(post.likes);
   const [reposted, setReposted] = useState(false);
@@ -113,6 +119,10 @@ export const HomePostCard: React.FC<HomePostCardProps> = ({
     setLiked(post.likedByMe ?? false);
     setLikeCount(post.likes);
   }, [post.id, post.likedByMe, post.likes]);
+
+  useEffect(() => {
+    setCommentCount(post.comments);
+  }, [post.id, post.comments]);
 
   useEffect(() => {
     if (captionExpanded) {
@@ -339,12 +349,16 @@ export const HomePostCard: React.FC<HomePostCardProps> = ({
               ) : (
                 author.role
               )}
-              <span className="home-post-dot">•</span>
-              <span className="home-post-inline-rating" title={`${rating.toFixed(1)} from ${count} ratings`}>
-                <Star size={11} className="home-post-rating-star" fill="currentColor" />
-                <strong>{rating.toFixed(1)}</strong>
-                <span className="home-post-rating-count">({count})</span>
-              </span>
+              {!live && (
+                <>
+                  <span className="home-post-dot">•</span>
+                  <span className="home-post-inline-rating" title={`${rating.toFixed(1)} from ${count} ratings`}>
+                    <Star size={11} className="home-post-rating-star" fill="currentColor" />
+                    <strong>{rating.toFixed(1)}</strong>
+                    <span className="home-post-rating-count">({count})</span>
+                  </span>
+                </>
+              )}
               <span className="home-post-dot">•</span>
               {post.postedAgo}
             </span>
@@ -498,9 +512,14 @@ export const HomePostCard: React.FC<HomePostCardProps> = ({
           <Heart size={17} fill={liked ? 'currentColor' : 'none'} />
           {likeCount}
         </button>
-        <button type="button" className="home-post-action">
+        <button
+          type="button"
+          className={`home-post-action ${commentsOpen ? 'active' : ''}`}
+          onClick={() => live && setCommentsOpen((v) => !v)}
+          aria-expanded={commentsOpen}
+        >
           <MessageCircle size={17} />
-          {post.comments}
+          {commentCount}
         </button>
         <button
           type="button"
@@ -520,6 +539,8 @@ export const HomePostCard: React.FC<HomePostCardProps> = ({
           Location
         </button>
       </footer>
+
+      {live && commentsOpen && <PostComments postId={post.id} onCountChange={setCommentCount} />}
 
       <ConfirmDialog
         open={confirmDeleteOpen}

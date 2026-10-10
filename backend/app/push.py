@@ -255,11 +255,26 @@ async def notify_users(
     Returns the number of device tokens targeted (0 when push is not configured).
     Must be called inside a running event loop (i.e. from a request handler).
     """
-    if get_client() is None:
-        return 0
-
     ids = list(dict.fromkeys(user_ids))
     if not ids:
+        return 0
+
+    # In-app notification feed: every push-worthy event is also stored so the
+    # bell shows it even without a device token / FCM. Chat messages are
+    # excluded: they already live in the conversation itself.
+    payload = data or {}
+    if payload.get("type") != "message":
+        try:
+            from app.models import Notification
+
+            for uid in ids:
+                db.add(Notification(user_id=uid, title=title, body=body, data=payload))
+            await db.commit()
+        except Exception:  # noqa: BLE001 - never fail the caller over a feed row
+            logger.exception("could not record in-app notification")
+            await db.rollback()
+
+    if get_client() is None:
         return 0
 
     result = await db.execute(

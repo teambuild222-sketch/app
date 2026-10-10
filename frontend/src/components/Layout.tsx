@@ -32,7 +32,14 @@ import ExplorePage from './ExplorePage/ExplorePage';
 import HomePostCard from './HomeFeed/HomePostCard';
 import { HOME_FEED_POSTS, type HomeFeedPost, type HomeMainCategory } from './HomeFeed/homeFeed';
 import { buildFeed, FEED_CHANGED_EVENT } from './HomeFeed/feedAlgorithm';
-import { loadFeedPosts } from './HomeFeed/feedSource';
+import { getInitialFeedPosts, loadFeedPosts } from './HomeFeed/feedSource';
+import { isBackendEnabled } from '../api/client';
+import { initialAvatar } from '../lib/avatar';
+import { useNotifications } from '../lib/useNotifications';
+import { NotificationsList } from './NotificationsList';
+import type { NotificationDto } from '../api/types';
+import { refreshStats } from '../api/statsApi';
+import { useLiveSync } from '../lib/useLiveSync';
 import { CreateEventModal } from './ExplorePage/CreateEventModal';
 import DiscoverPage from './DiscoverFeed/DiscoverPage';
 import ChatPage from './Chat/ChatPage';
@@ -70,26 +77,37 @@ export const Layout: React.FC = () => {
   // Membership states
   const [membershipPlan, setMembershipPlan] = useState<PlanType>(getSavedPlan);
   const [isMembershipOpen, setIsMembershipOpen] = useState(false);
-  const [fullName, setFullName] = useState(() => localStorage.getItem('simsor-fullname') || 'Katakam Ritvik');
-  const [avatar, setAvatar] = useState(() => localStorage.getItem('simsor-avatar') || 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&h=300&q=80');
+  const live = isBackendEnabled();
+  const readFullName = () =>
+    localStorage.getItem('simsor-fullname') ||
+    (live ? localStorage.getItem('simsor-username') || '' : 'Katakam Ritvik');
+  const readAvatar = () =>
+    localStorage.getItem('simsor-avatar') ||
+    (live
+      ? initialAvatar(readFullName())
+      : 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&h=300&q=80');
+  const [fullName, setFullName] = useState(readFullName);
+  const [avatar, setAvatar] = useState(readAvatar);
 
   useEffect(() => {
-    // If not set yet, store default Katakam Ritvik so it matches screenshot
+    // Demo defaults exist only for the offline mock mode. With a live backend the
+    // identity always comes from the signed-in account.
+    if (live) return;
     if (!localStorage.getItem('simsor-fullname')) {
       localStorage.setItem('simsor-fullname', 'Katakam Ritvik');
     }
     if (!localStorage.getItem('simsor-avatar')) {
       localStorage.setItem('simsor-avatar', 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&h=300&q=80');
     }
-  }, []);
+  }, [live]);
 
   useEffect(() => {
     const handlePlanChange = () => {
       setMembershipPlan(getSavedPlan());
     };
     const handleProfileChange = () => {
-      setFullName(localStorage.getItem('simsor-fullname') || 'Katakam Ritvik');
-      setAvatar(localStorage.getItem('simsor-avatar') || 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&h=300&q=80');
+      setFullName(readFullName());
+      setAvatar(readAvatar());
     };
     
     window.addEventListener(PLAN_CHANGE_EVENT, handlePlanChange);
@@ -132,6 +150,25 @@ export const Layout: React.FC = () => {
   const [chatCreateGroupOpen, setChatCreateGroupOpen] = useState(false);
   const [pendingChatId, setPendingChatId] = useState<string | null>(null);
   const bumpFeed = () => setFeedVersion((v) => v + 1);
+  const notifications = useNotifications();
+  const closeNotifications = () => {
+    setIsNotificationsOpen(false);
+    void notifications.markAllRead();
+  };
+  const openNotification = (n: NotificationDto) => {
+    const userId = n.data?.userId;
+    setIsNotificationsOpen(false);
+    void notifications.markAllRead();
+    if (n.data?.type === 'like' || n.data?.type === 'comment') {
+      setActiveTab('home');
+    } else if (userId) {
+      handleViewOrganizerProfile(userId);
+    }
+  };
+  useLiveSync(() => {
+    if (activeTab === 'home') bumpFeed();
+    void refreshStats();
+  });
 
   useEffect(() => {
     const onFeedChanged = () => bumpFeed();
@@ -157,16 +194,16 @@ export const Layout: React.FC = () => {
   // as state since that load is async, while `buildFeed`'s scoring stays
   // synchronous. Re-fetched whenever `feedVersion` bumps (new post, follow
   // change, tab re-open) so Home reflects the latest shared data.
-  const [feedPosts, setFeedPosts] = useState<HomeFeedPost[]>(() => [
-    ...loadUserPosts(),
-    ...HOME_FEED_POSTS,
-  ]);
+  const [feedPosts, setFeedPosts] = useState<HomeFeedPost[]>(() => getInitialFeedPosts());
 
   useEffect(() => {
     let cancelled = false;
     loadFeedPosts()
       .then((posts) => {
-        if (!cancelled) setFeedPosts(posts);
+        if (cancelled) return;
+        // Keep the same array when nothing changed so background refreshes
+        // don't reshuffle or re-render the feed under the user's thumb.
+        setFeedPosts((prev) => (JSON.stringify(prev) === JSON.stringify(posts) ? prev : posts));
       })
       .catch(() => {});
     return () => {
@@ -279,7 +316,9 @@ export const Layout: React.FC = () => {
                   aria-label="Notifications"
                 >
                   <Bell size={19} />
-                  <span className="red-badge-dot">3</span>
+                  {(live ? notifications.unread : 3) > 0 && (
+                    <span className="red-badge-dot">{live ? (notifications.unread > 9 ? "9+" : notifications.unread) : 3}</span>
+                  )}
                 </button>
 
                 <div className="settings-menu-container">
@@ -613,9 +652,12 @@ export const Layout: React.FC = () => {
           <div className="glass-card right-panel-card">
             <div className="panel-heading">
               <h3>Notifications</h3>
-              <span className="unread-badge">3 unread</span>
+              <span className="unread-badge">{live ? `${notifications.unread} unread` : "3 unread"}</span>
             </div>
-            <div className="panel-notifications-list">
+            {live ? (
+              <NotificationsList items={notifications.items.slice(0, 8)} onOpen={openNotification} />
+            ) : (
+              <div className="panel-notifications-list">
               <div className="panel-notif-item unread">
                 <div className="panel-notif-dot" />
                 <div className="panel-notif-info">
@@ -636,8 +678,11 @@ export const Layout: React.FC = () => {
                 </div>
               </div>
             </div>
+            )}
           </div>
 
+          {!live && (
+          <>
           {/* Suggested Dab Ups */}
           <div className="glass-card right-panel-card">
             <div className="panel-heading">
@@ -747,22 +792,27 @@ export const Layout: React.FC = () => {
               </div>
             </div>
           </div>
+          </>
+          )}
 
         </aside>
       </div>
 
       {/* Slide-up Notifications Drawer (Used on mobile/tablet) */}
       {isNotificationsOpen && (
-        <div className="ios-drawer-overlay" onClick={() => setIsNotificationsOpen(false)}>
+        <div className="ios-drawer-overlay" onClick={closeNotifications}>
           <div className="ios-drawer-sheet animate-slideUp" onClick={(e) => e.stopPropagation()}>
-            <button className="ios-drawer-close-btn" onClick={() => setIsNotificationsOpen(false)} aria-label="Close">
+            <button className="ios-drawer-close-btn" onClick={closeNotifications} aria-label="Close">
               <X size={20} />
             </button>
             <div className="ios-drawer-body">
               <h3 className="ios-drawer-title">Notifications</h3>
-              <p className="ios-drawer-subtitle">Stay connected with your matches</p>
+              <p className="ios-drawer-subtitle">{live ? "Live updates from your people" : "Stay connected with your matches"}</p>
 
-              <div className="panel-notifications-list">
+              {live ? (
+                <NotificationsList items={notifications.items} onOpen={openNotification} />
+              ) : (
+                <div className="panel-notifications-list">
                 <div className="panel-notif-item unread">
                   <div className="panel-notif-dot" />
                   <div className="panel-notif-info">
@@ -783,6 +833,7 @@ export const Layout: React.FC = () => {
                   </div>
                 </div>
               </div>
+              )}
             </div>
           </div>
         </div>

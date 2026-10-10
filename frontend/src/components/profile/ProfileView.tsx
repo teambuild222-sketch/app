@@ -37,6 +37,14 @@ import { saveProfile } from '../../api';
 import { isBackendEnabled } from '../../api/client';
 import { getCurrentViewerId } from '../ExplorePage/exploreEvents';
 import { uploadFile } from '../../api/uploadApi';
+import { fetchProfile } from '../../api/profileApi';
+import { refreshStats, STATS_CHANGED_EVENT } from '../../api/statsApi';
+import { requestPeople } from '../ExplorePage/exploreEvents';
+import { usePeopleVersion } from '../../lib/usePeople';
+import { useNotifications } from '../../lib/useNotifications';
+import { NotificationsList } from '../NotificationsList';
+import { initialAvatar } from '../../lib/avatar';
+import { LIVE_SYNC_EVENT } from '../../lib/useLiveSync';
 import {
   DAB_UPS_CHANGED_EVENT,
   getAchievementWins,
@@ -108,7 +116,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 }) => {
   const isOwnProfile = isOwnProfileUser(userId);
   const profileUserId = isOwnProfile ? null : userId;
+  usePeopleVersion(); // re-render when a real user's name / photo finishes loading
   const member = getProfileOrganizer(userId);
+  const notifications = useNotifications();
 
   const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<TabType>('posts');
@@ -139,30 +149,75 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [isCreateCommunityOpen, setIsCreateCommunityOpen] = useState(false);
 
   // Dynamic Profile states synchronized with localStorage
-  const [fullName, setFullName] = useState(() => localStorage.getItem('simsor-fullname') || 'Admin User');
-  const [username, setUsername] = useState(() => localStorage.getItem('simsor-username') || 'admin');
-  const [bio, setBio] = useState(() => localStorage.getItem('simsor-bio') || 'Sports Enthusiast • Event Explorer');
-  const [location, setLocation] = useState(() => localStorage.getItem('simsor-location') || 'Hyderabad, India');
-  const [avatar, setAvatar] = useState(() => localStorage.getItem('simsor-avatar') || 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&h=300&q=80');
+  const [fullName, setFullName] = useState(() => localStorage.getItem('simsor-fullname') || (isBackendEnabled() ? '' : 'Admin User'));
+  const [username, setUsername] = useState(() => localStorage.getItem('simsor-username') || (isBackendEnabled() ? '' : 'admin'));
+  const [bio, setBio] = useState(() => localStorage.getItem('simsor-bio') || (isBackendEnabled() ? '' : 'Sports Enthusiast • Event Explorer'));
+  const [location, setLocation] = useState(() => localStorage.getItem('simsor-location') || (isBackendEnabled() ? '' : 'Hyderabad, India'));
+  const [avatar, setAvatar] = useState(
+    () =>
+      localStorage.getItem('simsor-avatar') ||
+      (isBackendEnabled()
+        ? initialAvatar(localStorage.getItem('simsor-fullname') || localStorage.getItem('simsor-username') || '')
+        : 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&h=300&q=80'),
+  );
   
   const [sports, setSports] = useState<string[]>(() => {
     const saved = localStorage.getItem('simsor-sports');
-    return saved ? JSON.parse(saved) : ['Cricket', 'Football'];
+    return saved ? JSON.parse(saved) : isBackendEnabled() ? [] : ['Cricket', 'Football'];
   });
   const [entertainment, setEntertainment] = useState<string[]>(() => {
     const saved = localStorage.getItem('simsor-ent');
-    return saved ? JSON.parse(saved) : ['Music', 'Food Events'];
+    return saved ? JSON.parse(saved) : isBackendEnabled() ? [] : ['Music', 'Food Events'];
   });
 
   // Stats — derived live from the profile data layer; statsTick forces refresh.
   const [statsTick, setStatsTick] = useState(0);
   const bumpStats = () => setStatsTick((v) => v + 1);
 
+  // Real data: hydrate own profile from the server, pull real counters, and
+  // keep them fresh while this screen is open.
   useEffect(() => {
+    if (!isBackendEnabled()) return undefined;
+    let cancelled = false;
+    if (isOwnProfile) {
+      void fetchProfile()
+        .then((p) => {
+          if (cancelled || !p) return;
+          if (p.fullName) localStorage.setItem('simsor-fullname', p.fullName);
+          if (p.username) localStorage.setItem('simsor-username', p.username);
+          localStorage.setItem('simsor-bio', p.bio ?? '');
+          localStorage.setItem('simsor-location', p.location ?? '');
+          if (p.avatarUrl) localStorage.setItem('simsor-avatar', p.avatarUrl);
+          else localStorage.removeItem('simsor-avatar');
+          setFullName(p.fullName ?? '');
+          setUsername(p.username ?? '');
+          setBio(p.bio ?? '');
+          setLocation(p.location ?? '');
+          setAvatar(p.avatarUrl || initialAvatar(p.fullName || p.username));
+          if (p.sports) setSports(p.sports);
+          if (p.entertainment) setEntertainment(p.entertainment);
+        })
+        .catch(() => {});
+    } else if (profileUserId) {
+      requestPeople([profileUserId]);
+    }
+    const target = isOwnProfile ? null : profileUserId;
+    void refreshStats(target);
+    const onTick = () => void refreshStats(target);
+    window.addEventListener(LIVE_SYNC_EVENT, onTick);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(LIVE_SYNC_EVENT, onTick);
+    };
+  }, [isOwnProfile, profileUserId]);
+
+  useEffect(() => {
+    window.addEventListener(STATS_CHANGED_EVENT, bumpStats);
     window.addEventListener(DAB_UPS_CHANGED_EVENT, bumpStats);
     window.addEventListener(FEED_CHANGED_EVENT, bumpStats);
     window.addEventListener(USER_POSTS_CHANGED_EVENT, bumpStats);
     return () => {
+      window.removeEventListener(STATS_CHANGED_EVENT, bumpStats);
       window.removeEventListener(DAB_UPS_CHANGED_EVENT, bumpStats);
       window.removeEventListener(FEED_CHANGED_EVENT, bumpStats);
       window.removeEventListener(USER_POSTS_CHANGED_EVENT, bumpStats);
@@ -300,6 +355,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [communityAvatar, setCommunityAvatar] = useState(avatar);
   const [communityMemberIds, setCommunityMemberIds] = useState<string[]>([]);
   const communityPhotoRef = useRef<HTMLInputElement>(null);
+  const communityUploadingRef = useRef(false);
 
   const dabbedPeople = React.useMemo(
     () => (isCreateCommunityOpen ? getDabbedUpPeople() : []),
@@ -334,6 +390,22 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     };
     reader.readAsDataURL(file);
     e.target.value = '';
+
+    // Live backend: store the photo for real so the community avatar is a
+    // stable server URL (not a giant base64 string) everyone can see.
+    if (isBackendEnabled()) {
+      communityUploadingRef.current = true;
+      const toastId = toast.loading('Uploading community photo...');
+      uploadFile(file, file.name)
+        .then((res) => {
+          setCommunityAvatar(res.url);
+          toast.success('Photo uploaded', { id: toastId });
+        })
+        .catch(() => toast.error('Could not upload the photo', { id: toastId }))
+        .finally(() => {
+          communityUploadingRef.current = false;
+        });
+    }
   };
 
   // Hide bottom nav island while profile sheets are open
@@ -367,6 +439,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
   const handleCreateCommunity = (e: React.FormEvent) => {
     e.preventDefault();
+    if (communityUploadingRef.current) {
+      toast.error('Photo is still uploading - one moment');
+      return;
+    }
     const canCreate = isBackendEnabled() ? canCreateCommunityRemote() : canUserCreateCommunity();
     if (!canCreate) {
       toast.error('You can only create one community for now');
@@ -471,6 +547,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
   // Crop & Image upload states
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [removePhoto, setRemovePhoto] = useState(false);
   const [cropZoom, setCropZoom] = useState(1);
   const [cropOffset, setCropOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -533,6 +610,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
+        setRemovePhoto(false);
         setUploadedImage(reader.result as string);
         setCropZoom(1);
         setCropOffset({ x: 0, y: 0 });
@@ -542,13 +620,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   };
 
   // Image Drag crop handlers
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handleMouseDown = (e: React.PointerEvent) => {
     if (!uploadedImage) return;
     setIsDragging(true);
     setDragStart({ x: e.clientX - cropOffset.x, y: e.clientY - cropOffset.y });
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handleMouseMove = (e: React.PointerEvent) => {
     if (!isDragging || !uploadedImage) return;
     setCropOffset({
       x: e.clientX - dragStart.x,
@@ -560,40 +638,32 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     setIsDragging(false);
   };
 
-  // Canvas Crop & Save locally
-  const performCrop = (): string | null => {
-    if (!uploadedImage || !cropCanvasRef.current) return null;
-    const canvas = cropCanvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return null;
-
-    const img = new Image();
-    img.src = uploadedImage;
-
-    // Use synchronous draw logic after loading image
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Draw cropped region on 300x300 canvas
-    const size = 300;
-    canvas.width = size;
-    canvas.height = size;
-
-    // Draw centering image, taking zoom and offset into account
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
-    ctx.clip();
-
-    // Map offset to canvas scale
-    const drawSize = size * cropZoom;
-    const dx = (size - drawSize) / 2 + cropOffset.x;
-    const dy = (size - drawSize) / 2 + cropOffset.y;
-
-    ctx.drawImage(img, dx, dy, drawSize, drawSize);
-    ctx.restore();
-
-    return canvas.toDataURL('image/jpeg', 0.9);
-  };
+  // Canvas crop: renders exactly what the 120px preview shows (cover-fit, zoom
+  // around the centre, then the drag offset) into a crisp 400px circle-ready JPEG.
+  const performCrop = (): Promise<string | null> =>
+    new Promise((resolve) => {
+      if (!uploadedImage) return resolve(null);
+      const img = new Image();
+      img.onload = () => {
+        const size = 400;
+        const preview = 120;
+        const k = size / preview;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve(null);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, size, size);
+        const cover = Math.max(preview / img.width, preview / img.height);
+        ctx.translate(size / 2 + cropOffset.x * k, size / 2 + cropOffset.y * k);
+        ctx.scale(cropZoom * k, cropZoom * k);
+        ctx.drawImage(img, (-img.width * cover) / 2, (-img.height * cover) / 2, img.width * cover, img.height * cover);
+        resolve(canvas.toDataURL('image/jpeg', 0.9));
+      };
+      img.onerror = () => resolve(null);
+      img.src = uploadedImage;
+    });
 
   /** Cropped avatars are produced as base64 data URLs (canvas.toDataURL);
    * a live backend needs a real File/Blob to POST to /api/uploads. */
@@ -607,7 +677,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   }
 
   const handleRemovePhoto = () => {
-    setTempAvatar('https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&h=300&q=80');
+    setTempAvatar(
+      isBackendEnabled()
+        ? initialAvatar(tempFullName || fullName)
+        : 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&h=300&q=80',
+    );
+    setRemovePhoto(true);
     setUploadedImage(null);
     toast.success('Profile photo removed');
   };
@@ -626,9 +701,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       return;
     }
 
-    let finalAvatar = tempAvatar;
+    let finalAvatar = isBackendEnabled() && removePhoto && !uploadedImage ? '' : tempAvatar;
     if (uploadedImage) {
-      const cropped = performCrop();
+      const cropped = await performCrop();
       if (cropped) finalAvatar = cropped;
     }
 
@@ -661,7 +736,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       setUsername(saved.username);
       setBio(saved.bio);
       setLocation(saved.location);
-      setAvatar(saved.avatarUrl);
+      setAvatar(saved.avatarUrl || (isBackendEnabled() ? initialAvatar(saved.fullName) : avatar));
+      setRemovePhoto(false);
+      setUploadedImage(null);
       setSports(saved.sports);
       setEntertainment(saved.entertainment);
 
@@ -1574,10 +1651,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     {uploadedImage ? (
                       <div 
                         className="crop-drag-area"
-                        onMouseDown={handleMouseDown}
-                        onMouseMove={handleMouseMove}
-                        onMouseUp={handleMouseUp}
-                        onMouseLeave={handleMouseUp}
+                        style={{ touchAction: 'none' }}
+                        onPointerDown={handleMouseDown}
+                        onPointerMove={handleMouseMove}
+                        onPointerUp={handleMouseUp}
+                        onPointerCancel={handleMouseUp}
+                        onPointerLeave={handleMouseUp}
                       >
                         <img 
                           src={uploadedImage} 
@@ -1881,15 +1960,18 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
       {/* Notifications Drawer Mockup */}
       {isNotificationsOpen && (
-        <div className="ios-drawer-overlay" onClick={() => setIsNotificationsOpen(false)}>
+        <div className="ios-drawer-overlay" onClick={() => { setIsNotificationsOpen(false); void notifications.markAllRead(); }}>
           <div className="ios-drawer-sheet animate-slideUp" onClick={(e) => e.stopPropagation()}>
-            <button className="ios-drawer-close-btn" onClick={() => setIsNotificationsOpen(false)} aria-label="Close">
+            <button className="ios-drawer-close-btn" onClick={() => { setIsNotificationsOpen(false); void notifications.markAllRead(); }} aria-label="Close">
               <X size={20} />
             </button>
             <div className="ios-drawer-body">
               <h3 className="ios-drawer-title">Notifications</h3>
               <p className="ios-drawer-subtitle">Stay connected with your matches</p>
 
+              {isBackendEnabled() ? (
+                <NotificationsList items={notifications.items} />
+              ) : (
               <div className="ios-notifications-list">
                 <div className="ios-notification-item unread">
                   <div className="ios-notif-dot" />
@@ -1917,6 +1999,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   </div>
                 </div>
               </div>
+              )}
             </div>
           </div>
         </div>

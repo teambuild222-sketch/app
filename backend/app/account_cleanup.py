@@ -16,9 +16,11 @@ from app.models import (
     Follow,
     Message,
     MessageReaction,
+    Notification,
     PasswordReset,
     PeopleList,
     Post,
+    PostComment,
     PostLike,
     RevokedToken,
     User,
@@ -42,6 +44,7 @@ async def delete_user_account(db: AsyncSession, user: User) -> None:
         if post_ids:
             await purge_messages(db, Message.shared_post_id.in_(post_ids))
             await db.execute(delete(PostLike).where(PostLike.post_id.in_(post_ids)))
+            await db.execute(delete(PostComment).where(PostComment.post_id.in_(post_ids)))
             await db.execute(delete(Post).where(Post.id.in_(post_ids)))
         await db.execute(delete(Event).where(Event.id.in_(event_ids)))
 
@@ -52,9 +55,12 @@ async def delete_user_account(db: AsyncSession, user: User) -> None:
     if authored:
         await purge_messages(db, Message.shared_post_id.in_(authored))
         await db.execute(delete(PostLike).where(PostLike.post_id.in_(authored)))
+        await db.execute(delete(PostComment).where(PostComment.post_id.in_(authored)))
         await db.execute(delete(Post).where(Post.id.in_(authored)))
 
     await db.execute(delete(PostLike).where(PostLike.user_id == uid))
+    await db.execute(delete(PostComment).where(PostComment.author_id == uid))
+    await db.execute(delete(Notification).where(Notification.user_id == uid))
     await db.execute(delete(Affinity).where(Affinity.user_id == uid))
     await db.execute(
         delete(Follow).where((Follow.follower_id == uid) | (Follow.followee_id == uid))

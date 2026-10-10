@@ -21,6 +21,7 @@ export async function saveProfile(patch: Partial<UserProfile>): Promise<UserProf
     if (updated.bio != null) localStorage.setItem('simsor-bio', updated.bio);
     if (updated.location != null) localStorage.setItem('simsor-location', updated.location);
     if (updated.avatarUrl) localStorage.setItem('simsor-avatar', updated.avatarUrl);
+    else localStorage.removeItem('simsor-avatar');
     if (updated.sports) localStorage.setItem('simsor-sports', JSON.stringify(updated.sports));
     if (updated.entertainment) {
       localStorage.setItem('simsor-ent', JSON.stringify(updated.entertainment));

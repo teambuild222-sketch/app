@@ -14,6 +14,7 @@ import {
 } from '../common/eventChats';
 import type { HomeFeedPost } from '../HomeFeed/homeFeed';
 import { isBackendEnabled } from '../../api/client';
+import { uploadFile } from '../../api/uploadApi';
 import {
   addGroupMemberRemote,
   createConversationRemote,
@@ -158,6 +159,7 @@ let remoteConversationsRefreshInFlight: Promise<void> | null = null;
 const remoteMessagesById = new Map<string, MessageDto[]>();
 const remoteMessagesLoadedIds = new Set<string>();
 const remotePresenceById = new Map<string, ChatPresenceState>();
+let activeRemoteChatId: string | null = null;
 
 function refreshRemoteConversations(): Promise<void> {
   if (remoteConversationsRefreshInFlight) return remoteConversationsRefreshInFlight;
@@ -291,6 +293,7 @@ function rawRealtimeRowToMessage(row: Record<string, unknown>): MessageDto | nul
  * non-remote ids or when Supabase isn't configured. */
 export function openRemoteConversationRealtime(chatId: string): void {
   if (!isRemoteChatId(chatId)) return;
+  activeRemoteChatId = chatId;
   const myId = getCurrentViewerId();
   const myName = getCurrentUserOrganizer().name;
 
@@ -315,8 +318,30 @@ export function openRemoteConversationRealtime(chatId: string): void {
   });
 }
 
+/** Safety net behind Supabase Realtime: re-pulls the inbox and the thread that
+ * is currently open, so messages still arrive if the websocket was dropped
+ * (phone sleep, flaky wifi). Called by the app-wide live sync tick. */
+export function syncChatsFromServer(): void {
+  if (!isBackendEnabled()) return;
+  void refreshRemoteConversations();
+  const chatId = activeRemoteChatId;
+  if (!chatId) return;
+  getMessagesRemote(chatId)
+    .then((messages) => {
+      const current = remoteMessagesById.get(chatId) ?? [];
+      const lastNew = messages[messages.length - 1]?.id;
+      const lastOld = current[current.length - 1]?.id;
+      if (messages.length !== current.length || lastNew !== lastOld) {
+        remoteMessagesById.set(chatId, messages);
+        notifyChatStoreChanged();
+      }
+    })
+    .catch(() => {});
+}
+
 export function closeRemoteConversationRealtime(chatId: string): void {
   if (!isRemoteChatId(chatId)) return;
+  if (activeRemoteChatId === chatId) activeRemoteChatId = null;
   unsubscribeFromConversationRealtime(chatId);
   remotePresenceById.delete(chatId);
 }
@@ -956,6 +981,65 @@ export function sendVideoMessage(chatId: string, videoUrl: string, caption?: str
     createdAt: Date.now(),
     reactions: [],
   });
+}
+
+/** Uploads a real photo / video picked from the device, then posts it into the
+ * chat. Live backend: stored via /api/uploads and delivered to everyone in the
+ * conversation. Resolves with the uploaded media type. */
+export async function sendMediaMessage(chatId: string, file: File): Promise<'image' | 'video'> {
+  const kind: 'image' | 'video' = file.type.startsWith('video/') ? 'video' : 'image';
+  if (!file.type.startsWith('image/') && kind !== 'video') {
+    throw new Error('Choose a photo or a video');
+  }
+
+  if (!isBackendEnabled()) {
+    // Offline demo mode: keep it on-device so the flow still works.
+    const url = URL.createObjectURL(file);
+    if (kind === 'video') {
+      sendVideoMessage(chatId, url);
+    } else {
+      const me = getCurrentUserOrganizer();
+      appendStoredMessage(chatId, {
+        id: `${chatId}-${Date.now()}`,
+        authorId: ME_AUTHOR_ID,
+        authorName: me.name,
+        kind: 'image',
+        mediaUrl: url,
+        createdAt: Date.now(),
+        reactions: [],
+      });
+    }
+    return kind;
+  }
+
+  const uploaded = await uploadFile(file, file.name);
+
+  if (chatId.startsWith('event-')) {
+    appendEventChatMessage(chatId.replace('event-', ''), uploaded.url);
+    return kind;
+  }
+
+  if (isRemoteChatId(chatId)) {
+    const msg = await sendMessageRemote(chatId, { kind, mediaUrl: uploaded.url });
+    appendRemoteMessage(chatId, msg);
+    return kind;
+  }
+
+  if (kind === 'video') {
+    sendVideoMessage(chatId, uploaded.url);
+  } else {
+    const me = getCurrentUserOrganizer();
+    appendStoredMessage(chatId, {
+      id: `${chatId}-${Date.now()}`,
+      authorId: ME_AUTHOR_ID,
+      authorName: me.name,
+      kind: 'image',
+      mediaUrl: uploaded.url,
+      createdAt: Date.now(),
+      reactions: [],
+    });
+  }
+  return kind;
 }
 
 export function toggleReaction(chatId: string, messageId: string, emoji: string): void {

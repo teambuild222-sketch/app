@@ -1,5 +1,7 @@
 import { isBackendEnabled } from '../../api/client';
 import type { PublicUserDto } from '../../api/types';
+import { fetchPublicUser } from '../../api/usersApi';
+import { avatarOrInitial, initialAvatar } from '../../lib/avatar';
 
 export type EventOrganizer = {
   id: string;
@@ -142,16 +144,76 @@ export function getCurrentViewerId(): string {
 const REMOTE_ORGANIZER_CACHE = new Map<string, EventOrganizer>();
 
 export function cacheRemoteOrganizer(userId: string, profile: PublicUserDto): void {
+  const name = profile.fullName || profile.username;
   REMOTE_ORGANIZER_CACHE.set(userId, {
     id: profile.id,
-    name: profile.fullName || profile.username,
+    name,
     username: profile.username,
-    avatar: profile.avatarUrl || DEFAULT_ME_ACCOUNT.avatar,
-    role: 'Host',
+    avatar: avatarOrInitial(profile.avatarUrl, name),
+    role: 'Member',
     bio: profile.bio,
     location: profile.location,
     eventsHosted: profile.eventsHosted,
   });
+  bumpPeopleCache();
+}
+
+// --- People directory: lets components re-render once a real user's name/photo
+// has been fetched (feed authors, comment authors, profiles, notifications). ---
+let peopleCacheVersion = 0;
+const peopleCacheListeners = new Set<() => void>();
+
+function bumpPeopleCache(): void {
+  peopleCacheVersion += 1;
+  peopleCacheListeners.forEach((l) => l());
+}
+
+export function subscribePeopleCache(listener: () => void): () => void {
+  peopleCacheListeners.add(listener);
+  return () => {
+    peopleCacheListeners.delete(listener);
+  };
+}
+
+export function getPeopleCacheVersion(): number {
+  return peopleCacheVersion;
+}
+
+const PEOPLE_REQUESTED = new Set<string>();
+
+/** Fire-and-forget: fetch real profiles for ids we haven't seen yet. */
+export function requestPeople(ids: Array<string | null | undefined>): void {
+  if (!isBackendEnabled()) return;
+  for (const id of ids) {
+    if (!id || PEOPLE_REQUESTED.has(id)) continue;
+    if (id === ME_AUTHOR_ID || id === getCurrentViewerId()) continue;
+    if (REMOTE_ORGANIZER_CACHE.has(id)) continue;
+    PEOPLE_REQUESTED.add(id);
+    void fetchPublicUser(id).then((profile) => {
+      if (profile) cacheRemoteOrganizer(id, profile);
+    });
+  }
+}
+
+/** Real person for any user id: me, a fetched profile, or (mock mode only) a demo organizer. */
+export function resolveOrganizer(userId: string): EventOrganizer {
+  if (userId === ME_AUTHOR_ID || userId === getCurrentViewerId()) return getCurrentUserOrganizer();
+  const cached = REMOTE_ORGANIZER_CACHE.get(userId);
+  if (cached) return cached;
+  if (isBackendEnabled()) {
+    requestPeople([userId]);
+    return {
+      id: userId,
+      name: 'SIMSOR user',
+      username: '',
+      avatar: initialAvatar('S'),
+      role: 'Member',
+      bio: '',
+      location: '',
+      eventsHosted: 0,
+    };
+  }
+  return ORGANIZER_BY_ID[userId] ?? EVENT_ORGANIZERS[0];
 }
 
 export function getCachedRemoteOrganizer(userId: string): EventOrganizer | undefined {
@@ -181,14 +243,17 @@ export const DEFAULT_ME_ACCOUNT = {
  * across the Home feed and the Explore map so a created event shows the same host.
  */
 export function getCurrentUserOrganizer(): EventOrganizer {
+  const live = isBackendEnabled();
+  const username = localStorage.getItem('simsor-username') || (live ? '' : DEFAULT_ME_ACCOUNT.username);
+  const name = localStorage.getItem('simsor-fullname') || (live ? username : DEFAULT_ME_ACCOUNT.name);
   return {
     id: ME_AUTHOR_ID,
-    name: localStorage.getItem('simsor-fullname') || DEFAULT_ME_ACCOUNT.name,
-    username: localStorage.getItem('simsor-username') || DEFAULT_ME_ACCOUNT.username,
-    avatar: localStorage.getItem('simsor-avatar') || DEFAULT_ME_ACCOUNT.avatar,
+    name,
+    username,
+    avatar: localStorage.getItem('simsor-avatar') || (live ? initialAvatar(name) : DEFAULT_ME_ACCOUNT.avatar),
     role: 'Host · You',
-    bio: '',
-    location: localStorage.getItem('simsor-location') || DEFAULT_ME_ACCOUNT.location,
+    bio: localStorage.getItem('simsor-bio') || '',
+    location: localStorage.getItem('simsor-location') || (live ? '' : DEFAULT_ME_ACCOUNT.location),
     eventsHosted: 0,
   };
 }
@@ -677,9 +742,7 @@ export function getEventOrganizer(event: Partial<ExploreEvent>): EventOrganizer 
   if (organizerId === ME_AUTHOR_ID || organizerId === getCurrentViewerId()) {
     return getCurrentUserOrganizer();
   }
-  return (
-    ORGANIZER_BY_ID[organizerId] ?? REMOTE_ORGANIZER_CACHE.get(organizerId) ?? EVENT_ORGANIZERS[0]
-  );
+  return resolveOrganizer(organizerId);
 }
 
 export function openEventInGoogleMaps(event: ExploreEvent): void {

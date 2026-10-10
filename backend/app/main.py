@@ -19,6 +19,7 @@ from app.routers import (
     follows,
     health,
     moderation,
+    notifications,
     people_lists,
     posts,
     profile,
@@ -74,6 +75,7 @@ app.include_router(admin.router)
 app.include_router(dab_ups.router)
 app.include_router(people_lists.router)
 app.include_router(communities.router)
+app.include_router(notifications.router)
 
 # Local-disk upload fallback (see app/storage.py) — a no-op once R2 is
 # configured, since save_upload() then returns R2 URLs instead of /uploads/...

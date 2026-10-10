@@ -10,8 +10,9 @@ from sqlalchemy import func, select
 
 from app.affinity import record_interaction
 from app.deps import CurrentUser, DbSession, OptionalCurrentUser
-from app.models import Event, Post, PostLike
-from app.schemas import LikeResponse, PostCreate, PostDto
+from app.models import Event, Post, PostComment, PostLike, User
+from app.push import notify_users, preview
+from app.schemas import CommentCreate, CommentDto, LikeResponse, PostCreate, PostDto
 
 router = APIRouter(prefix="/api/posts", tags=["posts"])
 
@@ -36,9 +37,16 @@ async def list_posts(
     post_ids = [post.id for post, _ in rows]
     likes_by_post = await _likes_count_map(db, post_ids)
     liked_ids = await _liked_post_ids(db, current_user.id, post_ids) if current_user else set()
+    comments_by_post = await _comments_count_map(db, post_ids)
 
     return [
-        _to_dto(post, event, likes_by_post.get(post.id, 0), post.id in liked_ids)
+        _to_dto(
+            post,
+            event,
+            likes_by_post.get(post.id, 0),
+            post.id in liked_ids,
+            comments_by_post.get(post.id, 0),
+        )
         for post, event in rows
     ]
 
@@ -96,7 +104,8 @@ async def get_post(
     liked = False
     if current_user:
         liked = post.id in await _liked_post_ids(db, current_user.id, [post.id])
-    return _to_dto(post, event, likes, liked)
+    comments = (await _comments_count_map(db, [post.id])).get(post.id, 0)
+    return _to_dto(post, event, likes, liked, comments)
 
 
 @router.delete("/{post_id}")
@@ -109,6 +118,8 @@ async def delete_post(post_id: str, current_user: CurrentUser, db: DbSession) ->
     if post.author_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the author can delete this post")
 
+    await db.execute(PostLike.__table__.delete().where(PostLike.post_id == post_id))
+    await db.execute(PostComment.__table__.delete().where(PostComment.post_id == post_id))
     await db.delete(post)
     await db.commit()
     return {"ok": True}
@@ -137,6 +148,15 @@ async def toggle_like(post_id: str, current_user: CurrentUser, db: DbSession) ->
             await record_interaction(
                 db, current_user.id, event.category, event.main_category, "like", author_id=post.author_id
             )
+        await db.commit()
+        if post.author_id != current_user.id:
+            await notify_users(
+                db,
+                [post.author_id],
+                title="New like",
+                body=f"{current_user.full_name or current_user.username} liked your post",
+                data={"type": "like", "postId": post.id, "userId": current_user.id},
+            )
     else:
         await db.delete(existing)
         liked = False
@@ -147,6 +167,90 @@ async def toggle_like(post_id: str, current_user: CurrentUser, db: DbSession) ->
         select(func.count()).select_from(PostLike).where(PostLike.post_id == post_id)
     )
     return LikeResponse(liked=liked, likes=count_result.scalar_one())
+
+
+@router.get("/{post_id}/comments", response_model=list[CommentDto])
+async def list_comments(
+    post_id: str,
+    db: DbSession,
+    limit: int = Query(default=100, ge=1, le=200),
+) -> list[CommentDto]:
+    rows = (
+        await db.execute(
+            select(PostComment, User)
+            .join(User, User.id == PostComment.author_id)
+            .where(PostComment.post_id == post_id)
+            .order_by(PostComment.created_at.asc())
+            .limit(limit)
+        )
+    ).all()
+    return [_comment_dto(c, u) for c, u in rows]
+
+
+@router.post("/{post_id}/comments", response_model=CommentDto, status_code=status.HTTP_201_CREATED)
+async def add_comment(
+    post_id: str, body: CommentCreate, current_user: CurrentUser, db: DbSession
+) -> CommentDto:
+    post = (await db.execute(select(Post).where(Post.id == post_id))).scalar_one_or_none()
+    if post is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+
+    comment = PostComment(post_id=post_id, author_id=current_user.id, text=body.text)
+    db.add(comment)
+    await db.commit()
+    await db.refresh(comment)
+
+    if post.author_id != current_user.id:
+        await notify_users(
+            db,
+            [post.author_id],
+            title="New comment",
+            body=f"{current_user.full_name or current_user.username}: {preview(body.text)}",
+            data={"type": "comment", "postId": post.id, "userId": current_user.id},
+        )
+    return _comment_dto(comment, current_user)
+
+
+@router.delete("/{post_id}/comments/{comment_id}")
+async def delete_comment(
+    post_id: str, comment_id: str, current_user: CurrentUser, db: DbSession
+) -> dict:
+    comment = (
+        await db.execute(
+            select(PostComment).where(PostComment.id == comment_id, PostComment.post_id == post_id)
+        )
+    ).scalar_one_or_none()
+    if comment is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+    if comment.author_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the author can delete this comment")
+    await db.delete(comment)
+    await db.commit()
+    return {"ok": True}
+
+
+def _comment_dto(comment: PostComment, author: User) -> CommentDto:
+    return CommentDto(
+        id=comment.id,
+        postId=comment.post_id,
+        authorId=comment.author_id,
+        authorName=author.full_name or author.username,
+        authorUsername=author.username,
+        authorAvatar=author.avatar_url or "",
+        text=comment.text,
+        createdAt=comment.created_at,
+    )
+
+
+async def _comments_count_map(db: DbSession, post_ids: list[str]) -> dict[str, int]:
+    if not post_ids:
+        return {}
+    result = await db.execute(
+        select(PostComment.post_id, func.count())
+        .where(PostComment.post_id.in_(post_ids))
+        .group_by(PostComment.post_id)
+    )
+    return dict(result.all())
 
 
 async def _likes_count_map(db: DbSession, post_ids: list[str]) -> dict[str, int]:
@@ -167,7 +271,7 @@ async def _liked_post_ids(db: DbSession, user_id: str, post_ids: list[str]) -> s
     return set(result.scalars().all())
 
 
-def _to_dto(post: Post, event: Event, likes: int, liked_by_me: bool) -> PostDto:
+def _to_dto(post: Post, event: Event, likes: int, liked_by_me: bool, comments: int = 0) -> PostDto:
     event_date_label = f"{event.date} · {event.time}" if event.date and event.time else (event.date or event.time)
     return PostDto(
         id=post.id,
@@ -190,7 +294,7 @@ def _to_dto(post: Post, event: Event, likes: int, liked_by_me: bool) -> PostDto:
         createdAt=post.created_at,
         likes=likes,
         likedByMe=liked_by_me,
-        comments=post.comments_count,
+        comments=comments,
         registrationType=post.registration_type,  # type: ignore[arg-type]
         slotsTotal=post.slots_total,
         slotsFilled=post.slots_filled,
