@@ -42,8 +42,17 @@ Set all five `R2_*` vars (see `.env.production.example`). Takes priority over Su
 
 ## Deploy API on Render (HTTPS)
 
-1. Push this repo to GitHub (if not already).
-2. [Render](https://dashboard.render.com) → **New** → **Blueprint** → select repo  
+**Canonical GitHub repo:** [teambuild222-sketch/app](https://github.com/teambuild222-sketch/app)
+
+1. Push local `main` to that repo (from repo root):
+
+   ```powershell
+   .\scripts\push-teambuild-main.ps1
+   ```
+
+   Must authenticate as **teambuild222-sketch** (not a fork account). Replaces the old stub on `main` with `--force-with-lease`.
+
+2. [Render](https://dashboard.render.com) → **New** → **Blueprint** → select **`teambuild222-sketch/app`**  
    (uses `backend/render.yaml`) **or** New Web Service → Docker → root `backend`.
 3. Set secret env vars from `.env.production.example`  
    (`DATABASE_URL`, `JWT_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `CORS_ORIGINS`).
