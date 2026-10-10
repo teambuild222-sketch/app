@@ -42,19 +42,12 @@ Set all five `R2_*` vars (see `.env.production.example`). Takes priority over Su
 
 ## Deploy API on Render (HTTPS)
 
-**Canonical GitHub repo:** [teambuild222-sketch/app](https://github.com/teambuild222-sketch/app)
+**GitHub repo for Render:** [Aditya-skar/Zennex](https://github.com/Aditya-skar/Zennex) (`main` has `backend/render.yaml`).
 
-1. Push local `main` to that repo (from repo root):
-
-   ```powershell
-   .\scripts\push-teambuild-main.ps1
-   ```
-
-   Must authenticate as **teambuild222-sketch** (not a fork account). Replaces the old stub on `main` with `--force-with-lease`.
-
-2. [Render](https://dashboard.render.com) → **New** → **Blueprint** → select **`teambuild222-sketch/app`**  
+1. Push latest `main` if needed: `git push origin main`
+2. [Render](https://dashboard.render.com) → **New** → **Blueprint** → select **`Aditya-skar/Zennex`**  
    (uses `backend/render.yaml`) **or** New Web Service → Docker → root `backend`.
-3. Set secret env vars from `.env.production.example`  
+3. Set secret env vars from `backend/render-secrets.env` (generate with `python scripts/export_render_env.py`) or `.env.production.example`  
    (`DATABASE_URL`, `JWT_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `CORS_ORIGINS`).
 4. Deploy → copy the `https://….onrender.com` URL.
 5. In `frontend/.env` for phone/store builds:
