@@ -5,7 +5,8 @@ pydantic[email]>=2.0.0     # EmailStr validation on signup
 pydantic-settings>=2.5.0
 
 # Database (Phase 1)
-sqlalchemy>=2.0.36
+sqlalchemy[asyncio]>=2.0.36
+greenlet>=3.0.0            # required by SQLAlchemy asyncio (Alembic on Render)
 alembic>=1.14.0
 aiosqlite>=0.20.0          # local dev DB (sqlite+aiosqlite:///./simsor.db)
 asyncpg>=0.30.0            # Neon / Supabase Postgres in staging & prod
