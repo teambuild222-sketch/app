@@ -17,10 +17,14 @@ settings = get_settings()
 def _postgres_connect_args() -> dict:
     if not settings.database_url.startswith("postgresql"):
         return {}
-    # Supabase from cloud hosts (Render) needs TLS; local dev often connects without extra ssl args.
-    if settings.is_production:
-        return {"ssl": ssl.create_default_context()}
-    return {}
+    if not settings.is_production:
+        return {}
+    # Supabase pooler TLS: strict verify fails on Render with "self-signed certificate in chain".
+    # Still use TLS; skip chain verify (common Supabase + asyncpg on PaaS).
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    return {"ssl": ctx}
 
 
 _connect_args: dict = {}

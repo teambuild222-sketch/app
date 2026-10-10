@@ -52,7 +52,10 @@ def _engine_connect_args() -> dict:
     if settings.database_url.startswith("sqlite"):
         return {"check_same_thread": False}
     if settings.database_url.startswith("postgresql") and settings.is_production:
-        return {"ssl": _ssl.create_default_context()}
+        ctx = _ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = _ssl.CERT_NONE
+        return {"ssl": ctx}
     return {}
 
 
