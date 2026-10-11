@@ -1,4 +1,5 @@
 import { isBackendEnabled } from '../../api/client';
+import { getMembershipCommunitiesCache } from '../../api/communitiesApi';
 import { ME_AUTHOR_ID, getDefaultCommunityAvatarForCreator } from '../ExplorePage/exploreEvents';
 import { createCommunityChat, ensureJoinedCommunityChat } from '../Chat/chatStore';
 
@@ -14,6 +15,9 @@ export type Community = {
   avatar?: string;
   memberIds?: string[];
   createdAt: number;
+  verified?: boolean;
+  role?: 'admin' | 'member';
+  joinFormFields?: { id: string; key: string; type: string; required: boolean }[];
 };
 
 type CommunityMembership = {
@@ -161,8 +165,17 @@ function seedDemoJoinedCommunity(): void {
 }
 
 export function getAllCommunities(): Community[] {
+  if (isBackendEnabled()) {
+    const remote = getMembershipCommunitiesCache();
+    if (remote.length > 0) {
+      return [...remote].sort((a, b) => b.createdAt - a.createdAt);
+    }
+  }
   seedDemoJoinedCommunity();
   const communities = loadCommunities().sort((a, b) => b.createdAt - a.createdAt);
+  if (isBackendEnabled()) {
+    return communities;
+  }
   const reconciled = reconcileCommunitiesFromChats(communities);
   if (reconciled.length !== communities.length) {
     window.dispatchEvent(new CustomEvent(COMMUNITIES_CHANGED));
@@ -190,8 +203,19 @@ export function isCommunityCreator(community: Community): boolean {
   return community.creatorId === ME_AUTHOR_ID;
 }
 
+function communityMatchesChatId(community: Community, chatId: string): boolean {
+  return (
+    community.chatId === chatId ||
+    community.id === chatId ||
+    `community-chat-${community.id}` === chatId
+  );
+}
+
 export function getCommunityByChatId(chatId: string): Community | undefined {
-  return getAllCommunities().find((c) => c.chatId === chatId);
+  const local = getAllCommunities().find((c) => communityMatchesChatId(c, chatId));
+  if (local) return local;
+  if (!isBackendEnabled()) return undefined;
+  return getMembershipCommunitiesCache().find((c) => communityMatchesChatId(c, chatId));
 }
 
 export function getVisibleCommunitiesForProfile(userId: string | null, isOwnProfile: boolean): Community[] {
@@ -299,12 +323,14 @@ export function subscribeCommunities(onChange: () => void): () => void {
 
 export function deleteOwnedCommunityByChatId(chatId: string): void {
   const communities = loadCommunities();
-  const next = communities.filter((c) => !(c.chatId === chatId && c.creatorId === ME_AUTHOR_ID));
+  const next = communities.filter(
+    (c) => !(communityMatchesChatId(c, chatId) && c.creatorId === ME_AUTHOR_ID),
+  );
   if (next.length !== communities.length) saveCommunities(next);
 }
 
 export function leaveCommunityByChatId(chatId: string): void {
-  const community = loadCommunities().find((c) => c.chatId === chatId);
+  const community = getCommunityByChatId(chatId) ?? loadCommunities().find((c) => communityMatchesChatId(c, chatId));
   if (!community) return;
   saveMemberships(
     loadMemberships().filter(

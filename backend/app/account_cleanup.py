@@ -17,6 +17,9 @@ from app.models import (
     Message,
     MessageReaction,
     Notification,
+    NotionConnection,
+    NotionJoinRow,
+    NotionOAuthState,
     PasswordReset,
     PeopleList,
     Post,
@@ -38,6 +41,7 @@ async def delete_user_account(db: AsyncSession, user: User) -> None:
         await db.execute(select(Event.id).where(Event.organizer_id == uid))
     ).scalars().all()
     if event_ids:
+        await db.execute(delete(NotionJoinRow).where(NotionJoinRow.event_id.in_(event_ids)))
         post_ids = (
             await db.execute(select(Post.id).where(Post.event_id.in_(event_ids)))
         ).scalars().all()
@@ -101,6 +105,9 @@ async def delete_user_account(db: AsyncSession, user: User) -> None:
 
     await db.execute(delete(EventAttendee).where(EventAttendee.user_id == uid))
     await db.execute(
+        Community.__table__.update().where(Community.verified_by == uid).values(verified_by=None)
+    )
+    await db.execute(
         delete(DabUp).where((DabUp.requester_id == uid) | (DabUp.target_id == uid))
     )
     await db.execute(delete(PeopleList).where(PeopleList.user_id == uid))
@@ -110,10 +117,15 @@ async def delete_user_account(db: AsyncSession, user: User) -> None:
         await db.execute(select(Community.id).where(Community.created_by == uid))
     ).scalars().all()
     if owned_communities:
+        await db.execute(delete(NotionJoinRow).where(NotionJoinRow.club_id.in_(owned_communities)))
+        await db.execute(delete(NotionOAuthState).where(NotionOAuthState.club_id.in_(owned_communities)))
+        await db.execute(delete(NotionConnection).where(NotionConnection.club_id.in_(owned_communities)))
         await db.execute(
             delete(CommunityMember).where(CommunityMember.community_id.in_(owned_communities))
         )
         await db.execute(delete(Community).where(Community.id.in_(owned_communities)))
+    await db.execute(delete(NotionJoinRow).where(NotionJoinRow.user_id == uid))
+    await db.execute(delete(NotionOAuthState).where(NotionOAuthState.user_id == uid))
     await db.execute(delete(CommunityMember).where(CommunityMember.user_id == uid))
 
     await db.execute(delete(PasswordReset).where(PasswordReset.user_id == uid))

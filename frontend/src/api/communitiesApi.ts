@@ -4,6 +4,13 @@ import { API_ROUTES } from './types';
 import type { Community } from '../components/profile/communitiesStore';
 import { getCurrentViewerId } from '../components/ExplorePage/exploreEvents';
 
+export type JoinFormField = {
+  id: string;
+  key: string;
+  type: string;
+  required: boolean;
+};
+
 export type CommunityDto = {
   id: string;
   name: string;
@@ -13,6 +20,8 @@ export type CommunityDto = {
   creatorId: string;
   conversationId?: string | null;
   createdAt?: string | null;
+  verified?: boolean;
+  joinFormFields?: JoinFormField[];
 };
 
 function mapDto(dto: CommunityDto): Community {
@@ -25,6 +34,9 @@ function mapDto(dto: CommunityDto): Community {
     chatId: dto.conversationId ?? `community-chat-${dto.id}`,
     avatar: dto.avatarUrl,
     createdAt: dto.createdAt ? new Date(dto.createdAt).getTime() : Date.now(),
+    verified: Boolean(dto.verified),
+    role: dto.role,
+    joinFormFields: dto.joinFormFields ?? [],
   };
 }
 
@@ -33,6 +45,8 @@ let membershipCache: Community[] = readCache<Community[]>('communities:mine') ??
 function persistMemberships(next: Community[]): void {
   membershipCache = next;
   writeCache('communities:mine', next);
+  window.dispatchEvent(new CustomEvent('simsor-communities-changed'));
+  window.dispatchEvent(new CustomEvent('simsor-chat-store-changed'));
 }
 
 if (typeof window !== 'undefined') {

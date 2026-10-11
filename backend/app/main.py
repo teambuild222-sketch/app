@@ -19,6 +19,7 @@ from app.routers import (
     follows,
     health,
     moderation,
+    notion,
     notifications,
     people_lists,
     posts,
@@ -75,6 +76,7 @@ app.include_router(admin.router)
 app.include_router(dab_ups.router)
 app.include_router(people_lists.router)
 app.include_router(communities.router)
+app.include_router(notion.router)
 app.include_router(notifications.router)
 
 # Local-disk upload fallback (see app/storage.py) — a no-op once R2 is

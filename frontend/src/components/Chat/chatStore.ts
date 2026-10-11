@@ -147,8 +147,9 @@ function formatTime(createdAt: number): string {
    (see backend/app/models.py::_new_conversation_id), which never collides
    with the local `dm-*`/`group-*`/`community-chat-*`/`event-*` id schemes
    below — so a single id prefix check is enough to route every exported
-   function to the right storage. Event chats and communities are untouched
-   and keep using localStorage regardless of backend mode.
+   function to the right storage. Event chats stay local. Club/community
+   chats are the linked `conv_*` group when a backend is live — local
+   `community-chat-*` stubs are hidden so they cannot duplicate the inbox.
    ============================================================ */
 
 function isRemoteChatId(id: string): boolean {
@@ -186,6 +187,10 @@ if (typeof window !== 'undefined') {
   });
   window.addEventListener(CACHE_UPDATED, (event) => {
     const key = (event as CustomEvent<string>).detail;
+    if (key === 'communities:mine') {
+      notifyChatStoreChanged();
+      return;
+    }
     if (key === 'chat:inbox') {
       const list = readCache<ConversationDto[]>('chat:inbox');
       if (list) {
@@ -267,6 +272,43 @@ function remoteMessageToChatMessage(m: MessageDto, members: ChatMember[], myId: 
   };
 }
 
+function communityIdFromMembershipCache(conversationId: string): string | undefined {
+  const cached = readCache<Array<{ id?: string; chatId?: string }>>('communities:mine');
+  const hit = cached?.find((c) => c.chatId === conversationId);
+  return hit?.id;
+}
+
+function findRemoteCommunityConversation(communityId: string): ConversationDto | undefined {
+  const cached = readCache<Array<{ id?: string; chatId?: string }>>('communities:mine');
+  const cachedChatId = cached?.find((row) => row.id === communityId)?.chatId;
+  return (remoteConversations ?? []).find(
+    (c) => c.communityId === communityId || (cachedChatId != null && c.id === cachedChatId),
+  );
+}
+
+/** Map leftover local `community-chat-{communityId}` ids to the real `conv_*`. */
+export function resolveConversationId(chatId: string): string {
+  if (!chatId || isRemoteChatId(chatId)) return chatId;
+  if (!chatId.startsWith('community-chat-')) return chatId;
+  const communityId = chatId.slice('community-chat-'.length);
+  const fromDto = (remoteConversations ?? []).find((c) => c.communityId === communityId);
+  if (fromDto) return fromDto.id;
+  const cached = readCache<Array<{ id?: string; chatId?: string }>>('communities:mine');
+  const hit = cached?.find((c) => c.id === communityId && c.chatId?.startsWith('conv_'));
+  if (hit?.chatId) return hit.chatId;
+  const byLinked = findRemoteCommunityConversation(communityId);
+  return byLinked?.id ?? chatId;
+}
+
+export function isRemoteInboxReady(): boolean {
+  return !isBackendEnabled() || remoteConversations !== null;
+}
+
+export function refreshRemoteInbox(force = true): Promise<void> {
+  if (!isBackendEnabled()) return Promise.resolve();
+  return refreshRemoteConversations(force);
+}
+
 function remoteToChatConversation(dto: ConversationDto): ChatConversation {
   const myId = getCurrentViewerId();
   const members = dto.members.map(remoteMemberToChatMember);
@@ -275,19 +317,22 @@ function remoteToChatConversation(dto: ConversationDto): ChatConversation {
   // ensureRemoteMessagesLoaded) — until then, fall back to the one-message
   // preview the list endpoint already gives us so the inbox row isn't empty.
   const messages = remoteMessagesById.get(dto.id) ?? (dto.lastMessage ? [dto.lastMessage] : []);
+  const communityId = dto.communityId ?? communityIdFromMembershipCache(dto.id);
+  const type: ChatConversation['type'] = communityId ? 'community' : dto.type;
 
   return {
     id: dto.id,
-    type: dto.type,
+    type,
     name: dto.name,
     avatar: dto.avatarUrl,
-    subtitle: dto.type === 'group' ? `${dto.members.length} members` : '',
+    subtitle: type === 'group' || type === 'community' ? `${dto.members.length} members` : '',
     // Presence only reflects people who currently have THIS conversation's
     // realtime channel open (see chatRealtime.ts) — a reasonable proxy for
     // "online" without a separate app-wide presence system.
     online: dto.type === 'dm' ? (presence?.onlineUserIds.length ?? 0) > 0 : undefined,
     unread: dto.unread ?? 0,
     adminId: dto.adminId ?? undefined,
+    communityId,
     members,
     createdAt: new Date(dto.createdAt).getTime(),
     messages: messages.map((m) => remoteMessageToChatMessage(m, members, myId)),
@@ -645,12 +690,17 @@ export function sortConversationsByPinAndActivity(
   });
 }
 
+function isViewerAdmin(adminId?: string): boolean {
+  if (!adminId) return false;
+  return adminId === ME_AUTHOR_ID || adminId === getCurrentViewerId();
+}
+
 export function isOwnCreatedCommunityChat(chat: ChatConversation): boolean {
-  return chat.type === 'community' && chat.adminId === ME_AUTHOR_ID;
+  return chat.type === 'community' && isViewerAdmin(chat.adminId);
 }
 
 export function isJoinedCommunityChat(chat: ChatConversation): boolean {
-  return chat.type === 'community' && chat.adminId !== ME_AUTHOR_ID;
+  return chat.type === 'community' && !isViewerAdmin(chat.adminId);
 }
 
 function loadReactionOverlay(): Record<string, Record<string, ChatReaction[]>> {
@@ -856,17 +906,27 @@ function eventChatToConversation(
   };
 }
 
+function pruneLocalCommunityShadows(): void {
+  if (!isBackendEnabled()) return;
+  const store = loadStore();
+  const next = store.filter((c) => c.type !== 'community');
+  if (next.length === store.length) return;
+  // Write silently — getAllConversations already hides these rows. Emitting
+  // CHAT_STORE_CHANGED from a render-time read would loop the inbox.
+  localStorage.setItem(STORE_KEY, JSON.stringify(next));
+}
+
 export function getAllConversations(): ChatConversation[] {
   const backendEnabled = isBackendEnabled();
+  if (backendEnabled) pruneLocalCommunityShadows();
   const hidden = new Set(loadHiddenChatIds());
   const stored = loadStore()
     .map(hydrateConversation)
     .filter((c) => !hidden.has(c.id))
-    // Once a backend is live, real dm/group chats come from the API instead
-    // (below) — the local demo dm-*/group-* entries would otherwise show up
-    // as dead-end conversations with fake accounts. Communities stay local
-    // either way (out of scope this phase).
-    .filter((c) => !(backendEnabled && (c.type === 'dm' || c.type === 'group')));
+    // Once a backend is live, real dm/group/community chats come from the API
+    // instead — local demo dm-*/group-*/community-chat-* rows would otherwise
+    // show up as dead-end duplicates (empty members, no history).
+    .filter((c) => !(backendEnabled && (c.type === 'dm' || c.type === 'group' || c.type === 'community')));
   const events = getEventChats()
     .map(eventChatToConversation)
     .filter((c) => !hidden.has(c.id));
@@ -880,8 +940,38 @@ export function getAllConversations(): ChatConversation[] {
     }
   }
 
-  const all = [...events, ...remote, ...stored];
-  return sortConversationsByPinAndActivity(all);
+  const seen = new Set<string>();
+  const all: ChatConversation[] = [];
+  for (const c of [...events, ...remote, ...stored]) {
+    if (seen.has(c.id)) continue;
+    seen.add(c.id);
+    all.push(c);
+  }
+  return sortConversationsByPinAndActivity(collapseUnusedGroupDuplicates(all));
+}
+
+/** Accidental Create-group retries leave several empty chats with the same
+ * name and the same people. Keep the active one; hide the unused clones. */
+function collapseUnusedGroupDuplicates(conversations: ChatConversation[]): ChatConversation[] {
+  const byKey = new Map<string, ChatConversation[]>();
+  for (const c of conversations) {
+    if (c.type !== 'group') continue;
+    const key = `${c.name.trim().toLowerCase()}::${[...c.members.map((m) => m.id)].sort().join(',')}`;
+    const list = byKey.get(key) ?? [];
+    list.push(c);
+    byKey.set(key, list);
+  }
+  const hide = new Set<string>();
+  for (const list of byKey.values()) {
+    if (list.length < 2) continue;
+    const withActivity = list.filter((c) => c.messages.length > 0);
+    const keep = withActivity[0] ?? [...list].sort((a, b) => b.createdAt - a.createdAt)[0];
+    for (const c of list) {
+      if (c.id !== keep.id && c.messages.length === 0) hide.add(c.id);
+    }
+  }
+  if (hide.size === 0) return conversations;
+  return conversations.filter((c) => !hide.has(c.id));
 }
 
 let remoteContactsCache: PublicUserDto[] | null = readCache<PublicUserDto[]>('users:all');
@@ -1243,6 +1333,11 @@ export function createCommunityChat(input: {
   avatar?: string;
   memberIds?: string[];
 }): ChatConversation | null {
+  if (isBackendEnabled()) {
+    const remote = findRemoteCommunityConversation(input.communityId);
+    return remote ? remoteToChatConversation(remote) : null;
+  }
+
   const trimmed = input.name.trim();
   if (!trimmed) return null;
 
@@ -1290,6 +1385,24 @@ export function ensureJoinedCommunityChat(input: {
   name: string;
   adminId: string;
 }): ChatConversation {
+  if (isBackendEnabled()) {
+    const remote = findRemoteCommunityConversation(input.communityId);
+    if (remote) return remoteToChatConversation(remote);
+    return {
+      id: resolveConversationId(`community-chat-${input.communityId}`),
+      type: 'community',
+      name: input.name,
+      avatar: getDefaultCommunityAvatarForCreator(input.adminId),
+      subtitle: 'Community',
+      adminId: input.adminId,
+      communityId: input.communityId,
+      visibility: 'public',
+      members: [],
+      createdAt: Date.now(),
+      messages: [],
+    };
+  }
+
   const id = `community-chat-${input.communityId}`;
   const store = loadStore();
   const existingIdx = store.findIndex((c) => c.id === id);

@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Image as ImageIcon,
   MessageSquare,
+  MoreHorizontal,
   Paperclip,
   Pin,
   Plus,
@@ -40,6 +41,9 @@ import {
   isGroupAdmin,
   isJoinedCommunityChat,
   isOwnCreatedCommunityChat,
+  isRemoteInboxReady,
+  refreshRemoteInbox,
+  resolveConversationId,
   isSomeoneTyping,
   markConversationReadIfRemote,
   messagePreview,
@@ -58,6 +62,7 @@ import {
   type ChatMember,
   type ChatMessage,
 } from './chatStore';
+import { hydrateCommunities } from '../../api/communitiesApi';
 import {
   deleteOwnedCommunityByChatId,
   getAllCommunities,
@@ -132,10 +137,11 @@ export default function ChatPage({
 
   useEffect(() => {
     if (!initialChatId) return;
-    const target = getAllConversations().find((c) => c.id === initialChatId);
+    const resolved = resolveConversationId(initialChatId);
+    const target = getAllConversations().find((c) => c.id === resolved || c.id === initialChatId);
     if (target && isJoinedCommunityChat(target)) setInboxFilter('communities');
     else setInboxFilter('chats');
-    setActiveChatId(initialChatId);
+    setActiveChatId(resolved);
     setMobileShowConversation(true);
     onInitialChatConsumed?.();
   }, [initialChatId, onInitialChatConsumed]);
@@ -183,6 +189,7 @@ export default function ChatPage({
   const [reactionTarget, setReactionTarget] = useState<{ chatId: string; messageId: string } | null>(null);
   const [groupName, setGroupName] = useState('');
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [creatingGroup, setCreatingGroup] = useState(false);
   const [sessionActionTarget, setSessionActionTarget] = useState<ChatConversation | null>(null);
   const [showNewChat, setShowNewChat] = useState(false);
 
@@ -207,6 +214,12 @@ export default function ChatPage({
   }, []);
 
   useEffect(() => subscribeChatStore(refresh), [refresh]);
+
+  useEffect(() => {
+    if (!isBackendEnabled()) return;
+    void hydrateCommunities({ force: true });
+    void refreshRemoteInbox(true);
+  }, []);
 
   // Server-side people search (username / full name) for the New message and
   // New group pickers. Debounced so we don't hit the API on every keystroke.
@@ -348,14 +361,30 @@ export default function ChatPage({
   };
 
   useEffect(() => {
+    if (filteredConversations.some((c) => c.id === activeChatId)) return;
+
+    const resolved = resolveConversationId(activeChatId);
+    if (resolved !== activeChatId && filteredConversations.some((c) => c.id === resolved)) {
+      setActiveChatId(resolved);
+      return;
+    }
+
+    const found = conversations.find((c) => c.id === activeChatId || c.id === resolved);
+    if (found) {
+      if (found.id !== activeChatId) setActiveChatId(found.id);
+      setInboxFilter(isJoinedCommunityChat(found) ? 'communities' : 'chats');
+      return;
+    }
+
+    // Inbox still hydrating — keep the requested id so we don't snap away.
+    if (!isRemoteInboxReady()) return;
+
     if (filteredConversations.length === 0) {
       setMobileShowConversation(false);
       return;
     }
-    if (!filteredConversations.some((c) => c.id === activeChatId)) {
-      setActiveChatId(filteredConversations[0].id);
-    }
-  }, [filteredConversations, activeChatId]);
+    setActiveChatId(filteredConversations[0].id);
+  }, [filteredConversations, conversations, activeChatId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -386,7 +415,8 @@ export default function ChatPage({
   };
 
   const handleCreateGroup = async () => {
-    if (!groupName.trim() || selectedMembers.length === 0) return;
+    if (!groupName.trim() || selectedMembers.length === 0 || creatingGroup) return;
+    setCreatingGroup(true);
     try {
       const created = await createGroup(groupName, selectedMembers);
       if (!created) {
@@ -399,6 +429,8 @@ export default function ChatPage({
       openConversation(created.id);
     } catch (err) {
       toast.error(apiErrorMessage(err, 'Could not create the group. Try again.'));
+    } finally {
+      setCreatingGroup(false);
     }
   };
 
@@ -615,7 +647,7 @@ export default function ChatPage({
               >
                 <span>Direct Chats</span>
                 <span className="chat-filter-pill-count">
-                  {conversations.filter((c) => c.type !== 'community').length}
+                  {conversations.filter((c) => matchesInboxFilter(c, 'chats')).length}
                 </span>
               </button>
               <button
@@ -627,7 +659,7 @@ export default function ChatPage({
               >
                 <span>Communities</span>
                 <span className="chat-filter-pill-count">
-                  {conversations.filter((c) => c.type === 'community').length}
+                  {conversations.filter((c) => matchesInboxFilter(c, 'communities')).length}
                 </span>
               </button>
             </div>
@@ -962,7 +994,7 @@ export default function ChatPage({
             <button
               type="button"
               className="chat-primary-btn"
-              disabled={!groupName.trim() || selectedMembers.length === 0}
+              disabled={!groupName.trim() || selectedMembers.length === 0 || creatingGroup}
               onClick={handleCreateGroup}
             >
               Create group
@@ -1035,7 +1067,8 @@ export default function ChatPage({
                   </div>
                   {(activeChat.type === 'group' || activeChat.type === 'community') &&
                     isGroupAdmin(activeChat) &&
-                    member.id !== ME_AUTHOR_ID && (
+                    member.id !== ME_AUTHOR_ID &&
+                    member.id !== getCurrentViewerId() && (
                       <button
                         type="button"
                         className="chat-icon-btn danger"

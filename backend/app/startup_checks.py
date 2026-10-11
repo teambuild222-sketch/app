@@ -55,6 +55,10 @@ def validate_settings(settings: Settings) -> None:
         logger.warning("FCM_SERVICE_ACCOUNT_JSON not set: push notifications are disabled.")
     if not settings.admin_username_list:
         logger.warning("ADMIN_USERNAMES empty: nobody can use /api/admin until a user has is_admin.")
+    if not settings.notion_client_id or not settings.notion_client_secret:
+        logger.warning("NOTION_CLIENT_ID/SECRET unset: Connect Notion stays disabled.")
+    if not settings.token_encryption_key.strip():
+        logger.warning("TOKEN_ENCRYPTION_KEY unset: Notion tokens are encrypted with JWT_SECRET.")
 
     media = "R2" if settings.r2_configured else "Supabase Storage"
     logger.info("Production config checks passed (Postgres, JWT, CORS, %s).", media)

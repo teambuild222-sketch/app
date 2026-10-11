@@ -45,6 +45,8 @@ import { useNotifications } from '../../lib/useNotifications';
 import { NotificationsList } from '../NotificationsList';
 import { initialAvatar } from '../../lib/avatar';
 import { LIVE_SYNC_EVENT } from '../../lib/useLiveSync';
+import { AdminClubVerify } from './AdminClubVerify';
+import { ClubIntegrationsSheet } from './ClubIntegrationsSheet';
 import {
   DAB_UPS_CHANGED_EVENT,
   getAchievementWins,
@@ -86,7 +88,7 @@ import {
   subscribeCommunities,
   type Community,
 } from './communitiesStore';
-import { createDirectMessage } from '../Chat/chatStore';
+import { createDirectMessage, refreshRemoteInbox, resolveConversationId } from '../Chat/chatStore';
 import './ProfileView.css';
 
 type TabType = 'posts' | 'events' | 'achievements' | 'saved' | 'communities';
@@ -197,6 +199,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           setAvatar(p.avatarUrl || initialAvatar(p.fullName || p.username));
           if (p.sports) setSports(p.sports);
           if (p.entertainment) setEntertainment(p.entertainment);
+          setIsAdmin(Boolean(p.isAdmin));
         })
         .catch(() => {});
     } else if (profileUserId) {
@@ -386,6 +389,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [communityDescription, setCommunityDescription] = useState('');
   const [communityAvatar, setCommunityAvatar] = useState(avatar);
   const [communityMemberIds, setCommunityMemberIds] = useState<string[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [integrationsCommunity, setIntegrationsCommunity] = useState<Community | null>(null);
   const communityPhotoRef = useRef<HTMLInputElement>(null);
   const communityUploadingRef = useRef(false);
 
@@ -501,7 +506,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       toast.success(`"${created.name}" created — chat is ready`);
       setIsCreateCommunityOpen(false);
       resetCreateCommunityForm();
-      onOpenChat?.(created.chatId);
+      if (isBackendEnabled()) void refreshRemoteInbox();
+      onOpenChat?.(resolveConversationId(created.chatId));
     };
     void run();
   };
@@ -511,11 +517,19 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   };
 
   const handleCommunityClick = (community: Community) => {
+    const chatId = resolveConversationId(community.chatId);
     if (!isOwnProfile) {
-      if (isBackendEnabled()) void joinCommunityRemote(community.id);
-      else joinCommunity(community.id);
+      if (isBackendEnabled()) {
+        void joinCommunityRemote(community.id).then(() => {
+          void refreshRemoteInbox();
+          openCommunityChat(resolveConversationId(community.chatId) || chatId);
+        });
+        openCommunityChat(chatId);
+        return;
+      }
+      joinCommunity(community.id);
     }
-    openCommunityChat(community.chatId);
+    openCommunityChat(chatId);
   };
 
   const handleReportProfile = () => {
@@ -1531,20 +1545,42 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                       />
                     </span>
                     <span className="profile-community-copy">
-                      <span className="profile-community-name">{community.name}</span>
+                      <span className="profile-community-name">
+                        {community.name}
+                        {community.verified ? <em className="profile-verified-pill">Official</em> : null}
+                      </span>
                       {community.description && (
                         <span className="profile-community-desc">{community.description}</span>
                       )}
                     </span>
+                    {isBackendEnabled() && isOwnProfile && (community.role === 'admin' || community.creatorId === getCurrentViewerId()) && (
+                      <span
+                        className="profile-community-integrations"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIntegrationsCommunity(community);
+                        }}
+                      >
+                        Integrations
+                      </span>
+                    )}
                     <ChevronRight size={16} className="profile-community-chevron" aria-hidden="true" />
                   </button>
                 ))}
               </div>
             )}
+            {isBackendEnabled() && isOwnProfile && isAdmin && <AdminClubVerify />}
           </div>
         )}
       </div>
       </div>
+
+      {integrationsCommunity && (
+        <ClubIntegrationsSheet
+          community={integrationsCommunity}
+          onClose={() => setIntegrationsCommunity(null)}
+        />
+      )}
 
       {/* --------------------------------------------------
           CREATE COMMUNITY MODAL

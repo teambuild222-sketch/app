@@ -1,4 +1,5 @@
 import { apiDelete, apiGet, apiPost, isBackendEnabled } from './client';
+import { collectJoinAnswers, joinEventWithAnswers } from '../lib/joinFormGate';
 import { API_ROUTES } from './types';
 
 const JOINED_KEY = 'simsor-joined-v1';
@@ -45,11 +46,14 @@ export async function joinEventRemote(eventId: string): Promise<{ conversationId
     joinedCache = next;
     return {};
   }
-  const res = await apiPost<{
-    joined: boolean;
-    conversationId?: string | null;
-  }>(API_ROUTES.eventJoin(eventId));
-  if (res.joined) joinedCache.add(eventId);
+  const answers = await collectJoinAnswers(eventId);
+  const res = answers
+    ? await joinEventWithAnswers(eventId, answers)
+    : await apiPost<{
+        joined: boolean;
+        conversationId?: string | null;
+      }>(API_ROUTES.eventJoin(eventId));
+  joinedCache.add(eventId);
   writeLocalJoined(joinedCache);
   return { conversationId: res.conversationId ?? undefined };
 }

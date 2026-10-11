@@ -1,0 +1,65 @@
+.admin-clubs {
+  margin-top: 22px;
+  padding-top: 8px;
+}
+
+.admin-clubs h3 {
+  margin: 0 0 4px;
+}
+
+.admin-clubs > p {
+  margin: 0 0 12px;
+  color: #667;
+  font-size: 0.86rem;
+}
+
+.admin-clubs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-club-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 12px;
+}
+
+.admin-club-top {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.admin-club-top img {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: #e8eaee;
+}
+
+.admin-club-top span,
+.admin-club-card li {
+  display: block;
+  color: #667;
+  font-size: 0.8rem;
+}
+
+.admin-club-card ul {
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-club-card li.met {
+  color: #176b45;
+}
+
+.admin-club-card button {
+  border: 0;
+  border-radius: 12px;
+  padding: 8px 12px;
+  background: #1d1f24;
+  color: #fff;
+}

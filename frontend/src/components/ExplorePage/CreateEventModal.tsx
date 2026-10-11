@@ -29,6 +29,8 @@ import {
 } from '../HomeFeed/audienceLists';
 import { isBackendEnabled } from '../../api/client';
 import { uploadFile } from '../../api/uploadApi';
+import { getMembershipCommunitiesCache } from '../../api/communitiesApi';
+import { getCurrentViewerId } from './exploreEvents';
 
 const OSM_TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const OSM_ATTRIBUTION =
@@ -129,6 +131,11 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
   const [joinCloseDate, setJoinCloseDate] = useState('');
   const [joinCloseTime, setJoinCloseTime] = useState('');
   const [createGroupChat, setCreateGroupChat] = useState(true);
+  const [communityId, setCommunityId] = useState('');
+  const officialClubs = getMembershipCommunitiesCache().filter(
+    (club) =>
+      club.verified && (club.role === 'admin' || club.creatorId === getCurrentViewerId()),
+  );
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -302,6 +309,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
     setJoinCloseDate('');
     setJoinCloseTime('');
     setCreateGroupChat(true);
+    setCommunityId('');
   };
 
   if (!isOpen) return null;
@@ -395,6 +403,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
       slotsTotal: limitedSlots ? Number(slots) : undefined,
       registrationDeadline: limitedSlots ? `${joinCloseDate}T${joinCloseTime}` : undefined,
       createGroupChat,
+      communityId: communityId || undefined,
     });
 
     resetForm();
@@ -419,6 +428,23 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
           <div className="modal-form-scroll-container">
             <section className="create-event-section">
               <h4 className="create-event-section-title">Event details</h4>
+              {officialClubs.length > 0 && (
+                <div className="form-group">
+                  <label htmlFor="officialClub">Official club</label>
+                  <select
+                    id="officialClub"
+                    value={communityId}
+                    onChange={(e) => setCommunityId(e.target.value)}
+                  >
+                    <option value="">Personal event (no Notion roster)</option>
+                    {officialClubs.map((club) => (
+                      <option key={club.id} value={club.id}>
+                        {club.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="form-group">
                 <label htmlFor="eventName">Event name</label>
                 <input

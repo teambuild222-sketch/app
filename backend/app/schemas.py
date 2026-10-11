@@ -33,6 +33,7 @@ class UserProfile(BaseModel):
     # Own-account only (never on PublicUserProfile).
     email: str | None = None
     emailVerified: bool = False
+    isAdmin: bool = False
 
     model_config = {"from_attributes": True}
 
@@ -90,6 +91,8 @@ class EventDto(BaseModel):
     # Real start time, added in Phase 3 (see Event.starts_at). Optional so
     # older rows without it don't break the response.
     startsAt: datetime | None = None
+    communityId: str | None = None
+    hasJoinForm: bool = False
 
     model_config = {"from_attributes": True}
 
@@ -117,6 +120,7 @@ class EventCreate(BaseModel):
     inviteListIds: list[str] = Field(default_factory=list)
     invitedMemberIds: list[str] = Field(default_factory=list)
     startsAt: datetime | None = None
+    communityId: str | None = None
 
     @field_validator("title")
     @classmethod
@@ -311,6 +315,7 @@ class ConversationDto(BaseModel):
     name: str
     avatarUrl: str = ""
     adminId: str | None = None
+    communityId: str | None = None
     members: list[ChatMemberDto] = Field(default_factory=list)
     lastMessage: MessageDto | None = None
     unread: int = 0
@@ -515,6 +520,13 @@ class DabbedUpIdsResponse(BaseModel):
     userIds: list[str]
 
 
+class JoinFormFieldDto(BaseModel):
+    id: str
+    key: str
+    type: str = "text"
+    required: bool = False
+
+
 class CommunityDto(BaseModel):
     id: str
     name: str
@@ -524,6 +536,8 @@ class CommunityDto(BaseModel):
     creatorId: str
     conversationId: str | None = None
     createdAt: datetime | None = None
+    verified: bool = False
+    joinFormFields: list[JoinFormFieldDto] = Field(default_factory=list)
 
 
 class CommunityCreate(BaseModel):
@@ -589,3 +603,77 @@ class CommentCreate(BaseModel):
         if not v:
             raise ValueError("comment can't be empty")
         return v[:1000]
+
+
+class JoinEventBody(BaseModel):
+    answers: dict[str, str] = Field(default_factory=dict)
+
+
+class JoinFormDto(BaseModel):
+    eventId: str
+    communityId: str
+    communityName: str
+    verified: bool
+    fields: list[JoinFormFieldDto] = Field(default_factory=list)
+    notionConnected: bool = False
+
+
+class JoinFormFieldsUpdate(BaseModel):
+    fields: list[JoinFormFieldDto]
+
+
+class ClubVerificationUpdate(BaseModel):
+    verified: bool
+    note: str = ""
+
+
+class ClubRequirementDto(BaseModel):
+    id: str
+    label: str
+    met: bool
+
+
+class AdminClubDto(BaseModel):
+    id: str
+    name: str
+    avatarUrl: str = ""
+    memberCount: int = 0
+    creatorId: str
+    verified: bool = False
+    verifiedAt: datetime | None = None
+    verifiedBy: str | None = None
+    verificationNote: str = ""
+    requirements: list[ClubRequirementDto] = Field(default_factory=list)
+    notionStatus: str = "locked"
+    createdAt: datetime | None = None
+
+
+class NotionDatabaseDto(BaseModel):
+    id: str
+    title: str
+
+
+class NotionStatusDto(BaseModel):
+    communityId: str
+    verified: bool
+    status: str
+    workspaceName: str = ""
+    workspaceIcon: str = ""
+    databaseId: str = ""
+    databaseTitle: str = ""
+    lastError: str = ""
+    fields: list[JoinFormFieldDto] = Field(default_factory=list)
+    databases: list[NotionDatabaseDto] = Field(default_factory=list)
+
+
+class NotionOAuthStartDto(BaseModel):
+    url: str
+    state: str
+
+
+class NotionDatabaseSelect(BaseModel):
+    databaseId: str
+
+
+class NotionWebhookAck(BaseModel):
+    ok: bool = True

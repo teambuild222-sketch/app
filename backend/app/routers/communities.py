@@ -6,7 +6,8 @@ from app.community_chat import add_member_to_community_chat, ensure_community_co
 from app.deps import CurrentUser, DbSession, OptionalCurrentUser
 from app.models import Community, CommunityMember
 from app.push import notify_users
-from app.schemas import CommunityCreate, CommunityDto, OkResponse
+from app.club_verification import is_club_verified
+from app.schemas import CommunityCreate, CommunityDto, JoinFormFieldDto, OkResponse
 
 router = APIRouter(prefix="/api/communities", tags=["communities"])
 
@@ -134,6 +135,9 @@ async def _member_counts(db: DbSession, community_ids: list[str]) -> dict[str, i
 
 
 def _to_dto(community: Community, role: str, member_count: int) -> CommunityDto:
+    fields = []
+    if role == "admin":
+        fields = [JoinFormFieldDto.model_validate(item) for item in (community.join_form_fields or [])]
     return CommunityDto(
         id=community.id,
         name=community.name,
@@ -143,4 +147,6 @@ def _to_dto(community: Community, role: str, member_count: int) -> CommunityDto:
         creatorId=community.created_by,
         conversationId=community.conversation_id,
         createdAt=community.created_at,
+        verified=is_club_verified(community),
+        joinFormFields=fields,
     )

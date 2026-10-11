@@ -1,0 +1,80 @@
+.join-form-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(15, 18, 22, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.join-form-sheet {
+  width: min(520px, 100%);
+  max-height: 88vh;
+  overflow: auto;
+  background: #f4f5f7;
+  border-radius: 22px 22px 0 0;
+  padding: 18px 18px 28px;
+}
+
+.join-form-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.join-form-header h3 {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+}
+
+.join-form-header p {
+  margin: 0;
+  color: #667;
+  font-size: 0.85rem;
+}
+
+.join-form-close {
+  border: 0;
+  background: #e8eaee;
+  width: 32px;
+  height: 32px;
+  border-radius: 16px;
+}
+
+.join-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.join-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: #555;
+}
+
+.join-form-field input[type='text'],
+.join-form-field input[type='email'],
+.join-form-field input[type='number'],
+.join-form-field input[type='date'],
+.join-form-field input[type='url'] {
+  border: 0;
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 0.95rem;
+}
+
+.join-form-submit {
+  margin-top: 8px;
+  border: 0;
+  border-radius: 14px;
+  padding: 13px;
+  background: #1d1f24;
+  color: #fff;
+  font-weight: 600;
+}

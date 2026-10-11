@@ -10,13 +10,17 @@ from sqlalchemy import func, select
 
 from app.content_removal import remove_message, remove_post
 from app.deps import AdminUser, DbSession, is_admin_user
-from app.models import Event, Message, Post, User, UserReport
+from app.club_verification import apply_verification, evaluate_requirements, is_club_verified
+from app.models import Community, CommunityMember, Event, Message, NotionConnection, Post, User, UserReport
 from app.push import notify_users
 from app.schemas import (
+    AdminClubDto,
     AdminReportDto,
     AdminReportUpdate,
     AdminStatsDto,
     AdminUserUpdate,
+    ClubRequirementDto,
+    ClubVerificationUpdate,
     OkResponse,
     ReportStatus,
 )
@@ -181,3 +185,90 @@ async def update_user(user_id: str, body: AdminUserUpdate, admin: AdminUser, db:
     await _set_suspended(db, admin, user_id, body.suspended)
     await db.commit()
     return OkResponse(ok=True)
+
+
+@router.get("/communities", response_model=list[AdminClubDto])
+async def list_communities_for_review(_admin: AdminUser, db: DbSession) -> list[AdminClubDto]:
+    communities = (
+        await db.execute(select(Community).order_by(Community.created_at.desc()))
+    ).scalars().all()
+    counts = await _community_member_counts(db, [c.id for c in communities])
+    connections = await _connections_by_club(db, [c.id for c in communities])
+    return [
+        _club_dto(community, counts.get(community.id, 0), connections.get(community.id))
+        for community in communities
+    ]
+
+
+@router.patch("/communities/{community_id}/verification", response_model=AdminClubDto)
+async def set_community_verification(
+    community_id: str, body: ClubVerificationUpdate, admin: AdminUser, db: DbSession
+) -> AdminClubDto:
+    community = await db.get(Community, community_id)
+    if community is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Community not found")
+    connection = (
+        await db.execute(select(NotionConnection).where(NotionConnection.club_id == community.id))
+    ).scalar_one_or_none()
+    apply_verification(
+        community,
+        admin_id=admin.id,
+        verified=body.verified,
+        note=body.note,
+        connection=connection,
+    )
+    await db.commit()
+    await db.refresh(community)
+    counts = await _community_member_counts(db, [community.id])
+    return _club_dto(community, counts.get(community.id, 0), connection)
+
+
+async def _community_member_counts(db: DbSession, community_ids: list[str]) -> dict[str, int]:
+    if not community_ids:
+        return {}
+    rows = (
+        await db.execute(
+            select(CommunityMember.community_id, func.count())
+            .where(CommunityMember.community_id.in_(community_ids))
+            .group_by(CommunityMember.community_id)
+        )
+    ).all()
+    return {cid: int(n) for cid, n in rows}
+
+
+async def _connections_by_club(db: DbSession, club_ids: list[str]) -> dict[str, NotionConnection]:
+    if not club_ids:
+        return {}
+    rows = (
+        await db.execute(select(NotionConnection).where(NotionConnection.club_id.in_(club_ids)))
+    ).scalars().all()
+    return {row.club_id: row for row in rows}
+
+
+def _club_dto(community: Community, member_count: int, connection: NotionConnection | None) -> AdminClubDto:
+    requirements = evaluate_requirements(
+        name=community.name,
+        avatar_url=community.avatar_url,
+        member_count=member_count,
+        has_chat=bool(community.conversation_id),
+    )
+    if not is_club_verified(community):
+        notion_status = "locked"
+    elif connection is None:
+        notion_status = "not_connected"
+    else:
+        notion_status = connection.status
+    return AdminClubDto(
+        id=community.id,
+        name=community.name,
+        avatarUrl=community.avatar_url,
+        memberCount=member_count,
+        creatorId=community.created_by,
+        verified=is_club_verified(community),
+        verifiedAt=community.verified_at,
+        verifiedBy=community.verified_by,
+        verificationNote=community.verification_note,
+        requirements=[ClubRequirementDto.model_validate(item) for item in requirements],
+        notionStatus=notion_status,
+        createdAt=community.created_at,
+    )

@@ -1,14 +1,38 @@
 """GET/POST/DELETE /api/events â€” matches API_CONTRACT.md's Events section."""
-from fastapi import APIRouter, HTTPException, Query, status
+from typing import Annotated
+
+from fastapi import APIRouter, Body, HTTPException, Query, status
 from sqlalchemy import select
 
 from app.affinity import record_interaction
+from app.club_access import require_club_admin
+from app.club_verification import is_club_verified, normalize_join_fields
 from app.deps import CurrentUser, DbSession
 from app.event_chat import ensure_event_conversation
 from app.geo import bounding_box, haversine_km
-from app.models import Conversation, Event, EventAttendee, PeopleList, Post, PostComment, PostLike
+from app.models import (
+    Community,
+    Conversation,
+    Event,
+    EventAttendee,
+    NotionConnection,
+    NotionJoinRow,
+    PeopleList,
+    Post,
+    PostComment,
+    PostLike,
+)
+from app.notion_sync import write_join_to_notion
 from app.push import notify_users
-from app.schemas import EventCreate, EventDto, JoinEventResponse, JoinedEventsResponse
+from app.schemas import (
+    EventCreate,
+    EventDto,
+    JoinEventBody,
+    JoinEventResponse,
+    JoinFormDto,
+    JoinFormFieldDto,
+    JoinedEventsResponse,
+)
 
 router = APIRouter(prefix="/api/events", tags=["events"])
 
@@ -51,7 +75,7 @@ async def list_events(
         end = offset + limit if limit is not None else None
         events = events[offset:end]
 
-    return [_to_dto(e) for e in events]
+    return [await _to_dto(db, e) for e in events]
 
 
 @router.get("/joined/mine", response_model=JoinedEventsResponse)
@@ -63,11 +87,33 @@ async def my_joined_events(current_user: CurrentUser, db: DbSession) -> JoinedEv
 @router.get("/{event_id}", response_model=EventDto)
 async def get_event(event_id: str, db: DbSession) -> EventDto:
     event = await _load_event(db, event_id)
-    return _to_dto(event)
+    return await _to_dto(db, event)
+
+
+@router.get("/{event_id}/join-form", response_model=JoinFormDto)
+async def get_join_form(event_id: str, current_user: CurrentUser, db: DbSession) -> JoinFormDto:
+    event = await _load_event(db, event_id)
+    community, connection = await _event_club(db, event)
+    fields = []
+    if community is not None and is_club_verified(community):
+        fields = [JoinFormFieldDto.model_validate(item) for item in (community.join_form_fields or [])]
+    return JoinFormDto(
+        eventId=event.id,
+        communityId=community.id if community else "",
+        communityName=community.name if community else "",
+        verified=bool(community and is_club_verified(community)),
+        fields=fields,
+        notionConnected=bool(connection and connection.status == "connected" and connection.database_id),
+    )
 
 
 @router.post("/{event_id}/join", response_model=JoinEventResponse)
-async def join_event(event_id: str, current_user: CurrentUser, db: DbSession) -> JoinEventResponse:
+async def join_event(
+    event_id: str,
+    current_user: CurrentUser,
+    db: DbSession,
+    body: Annotated[JoinEventBody, Body()] = JoinEventBody(),
+) -> JoinEventResponse:
     event = await _load_event(db, event_id)
     if event.organizer_id == current_user.id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Organizer is already hosting")
@@ -76,6 +122,22 @@ async def join_event(event_id: str, current_user: CurrentUser, db: DbSession) ->
         invited = set(event.invited_member_ids or [])
         if current_user.id not in invited:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invite only")
+
+    answers = dict(body.answers or {})
+    community, _connection = await _event_club(db, event)
+    if community is not None and is_club_verified(community):
+        normalized = normalize_join_fields(community.join_form_fields)
+        missing = []
+        for field in normalized:
+            raw = answers.get(str(field.get("key") or ""))
+            filled = raw is not None and str(raw).strip() != ""
+            if field.get("required") and not filled:
+                missing.append(str(field.get("key")))
+        if missing:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Join form requires: {', '.join(missing)}",
+            )
 
     existing = await db.execute(
         select(EventAttendee).where(
@@ -99,7 +161,7 @@ async def join_event(event_id: str, current_user: CurrentUser, db: DbSession) ->
         if post.slots_filled >= post.slots_total:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Event is full")
 
-    db.add(EventAttendee(event_id=event_id, user_id=current_user.id))
+    db.add(EventAttendee(event_id=event_id, user_id=current_user.id, form_answers=answers))
     event.attendees = max(event.attendees, 0) + 1
     if post:
         post.slots_filled += 1
@@ -113,6 +175,15 @@ async def join_event(event_id: str, current_user: CurrentUser, db: DbSession) ->
         author_id=event.organizer_id,
     )
     conv = await ensure_event_conversation(db, event, current_user.id)
+    if community is not None and is_club_verified(community):
+        await write_join_to_notion(
+            db,
+            community=community,
+            event_id=event.id,
+            event_title=event.title,
+            user_id=current_user.id,
+            answers=answers,
+        )
     await db.commit()
     await db.refresh(event)
     if post:
@@ -188,6 +259,16 @@ async def create_event(body: EventCreate, current_user: CurrentUser, db: DbSessi
             invited_ids.extend(people_list.member_ids)
         invited_ids = list(dict.fromkeys(invited_ids))
 
+    community_id = None
+    if body.communityId:
+        community = await require_club_admin(db, body.communityId, current_user)
+        if not is_club_verified(community):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only verified clubs can host official club events",
+            )
+        community_id = community.id
+
     event = Event(
         title=body.title,
         category=body.category,
@@ -206,11 +287,12 @@ async def create_event(body: EventCreate, current_user: CurrentUser, db: DbSessi
         invite_list_ids=body.inviteListIds,
         invited_member_ids=invited_ids,
         starts_at=body.startsAt,
+        community_id=community_id,
     )
     db.add(event)
     await db.commit()
     await db.refresh(event)
-    return _to_dto(event)
+    return await _to_dto(db, event)
 
 
 @router.delete("/{event_id}")
@@ -234,6 +316,7 @@ async def delete_event(event_id: str, current_user: CurrentUser, db: DbSession) 
         await db.execute(PostComment.__table__.delete().where(PostComment.post_id.in_(post_ids)))
         await db.execute(Post.__table__.delete().where(Post.id.in_(post_ids)))
 
+    await db.execute(NotionJoinRow.__table__.delete().where(NotionJoinRow.event_id == event_id))
     await db.execute(EventAttendee.__table__.delete().where(EventAttendee.event_id == event_id))
 
     await db.delete(event)
@@ -256,7 +339,19 @@ async def _primary_post(db: DbSession, event_id: str) -> Post | None:
     return result.scalar_one_or_none()
 
 
-def _to_dto(event: Event) -> EventDto:
+async def _event_club(db: DbSession, event: Event) -> tuple[Community | None, NotionConnection | None]:
+    if not event.community_id:
+        return None, None
+    community = await db.get(Community, event.community_id)
+    if community is None:
+        return None, None
+    result = await db.execute(select(NotionConnection).where(NotionConnection.club_id == community.id))
+    return community, result.scalar_one_or_none()
+
+
+async def _to_dto(db: DbSession, event: Event) -> EventDto:
+    community, _connection = await _event_club(db, event)
+    has_form = bool(community and is_club_verified(community) and (community.join_form_fields or []))
     return EventDto(
         id=event.id,
         title=event.title,
@@ -275,4 +370,6 @@ def _to_dto(event: Event) -> EventDto:
         inviteListIds=event.invite_list_ids,
         invitedMemberIds=event.invited_member_ids,
         startsAt=event.starts_at,
+        communityId=event.community_id,
+        hasJoinForm=has_form,
     )

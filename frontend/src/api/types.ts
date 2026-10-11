@@ -17,6 +17,7 @@ export type UserProfile = {
   /** Own account only (never on public profiles). */
   email?: string | null;
   emailVerified?: boolean;
+  isAdmin?: boolean;
 };
 
 export type AuthSession = {
@@ -45,6 +46,8 @@ export type EventDto = {
   invitedMemberIds?: string[];
   /** Real event start time (ISO), added in Phase 3 — see backend/PHASE3.md. */
   startsAt?: string | null;
+  communityId?: string | null;
+  hasJoinForm?: boolean;
 };
 
 export type PostType = 'poster' | 'text' | 'video';
@@ -205,6 +208,7 @@ export type ConversationDto = {
   name: string;
   avatarUrl: string;
   adminId?: string | null;
+  communityId?: string | null;
   members: ChatMemberDto[];
   lastMessage?: MessageDto | null;
   unread: number;
@@ -262,6 +266,14 @@ export const API_ROUTES = {
   eventById: (id: string) => `/api/events/${id}`,
   eventsJoinedMine: '/api/events/joined/mine',
   eventJoin: (id: string) => `/api/events/${id}/join`,
+  eventJoinForm: (id: string) => `/api/events/${id}/join-form`,
+  adminCommunities: '/api/admin/communities',
+  adminCommunityVerification: (id: string) => `/api/admin/communities/${id}/verification`,
+  communityNotion: (id: string) => `/api/communities/${id}/notion`,
+  communityNotionOAuthStart: (id: string) => `/api/communities/${id}/notion/oauth/start`,
+  communityNotionDatabase: (id: string) => `/api/communities/${id}/notion/database`,
+  communityNotionSync: (id: string) => `/api/communities/${id}/notion/sync`,
+  communityJoinForm: (id: string) => `/api/communities/${id}/join-form`,
   peopleLists: '/api/people-lists',
   peopleListById: (id: string) => `/api/people-lists/${id}`,
   communities: '/api/communities',

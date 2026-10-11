@@ -2,7 +2,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import expression
 
@@ -108,6 +108,8 @@ class Event(Base):
     # server-side. Nullable so older rows (pre-Phase-3) degrade gracefully; feed
     # ranking falls back to parsing `date`/`time` when this is absent.
     starts_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # No FK: Event ↔ Community ↔ Conversation already cycle through event_id.
+    community_id: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
@@ -355,6 +357,14 @@ def _new_list_id() -> str:
     return f"list_{uuid.uuid4().hex[:12]}"
 
 
+def _new_notion_connection_id() -> str:
+    return f"ntn_{uuid.uuid4().hex[:16]}"
+
+
+def _new_notion_join_id() -> str:
+    return f"njr_{uuid.uuid4().hex[:16]}"
+
+
 def _new_community_id() -> str:
     return f"cmty_{uuid.uuid4().hex[:12]}"
 
@@ -376,6 +386,7 @@ class EventAttendee(Base):
 
     event_id: Mapped[str] = mapped_column(String(32), ForeignKey("events.id"), primary_key=True)
     user_id: Mapped[str] = mapped_column(String(32), ForeignKey("users.id"), primary_key=True)
+    form_answers: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
 
@@ -399,6 +410,12 @@ class Community(Base):
     conversation_id: Mapped[str | None] = mapped_column(
         String(32), ForeignKey("conversations.id"), nullable=True, index=True
     )
+    # Team-verified official club. Notion + join-form writes only work when set.
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    verified_by: Mapped[str | None] = mapped_column(String(32), ForeignKey("users.id"), nullable=True)
+    verification_note: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    # Editable sheet columns: [{id, key, type, required}, ...]
+    join_form_fields: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
 
@@ -452,3 +469,58 @@ class PostComment(Base):
     author_id: Mapped[str] = mapped_column(String(32), ForeignKey("users.id"), nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, index=True)
+
+
+class NotionConnection(Base):
+    """One Notion workspace connection per official club. Tokens are encrypted."""
+
+    __tablename__ = "notion_connections"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_new_notion_connection_id)
+    club_id: Mapped[str] = mapped_column(String(32), ForeignKey("communities.id"), unique=True, nullable=False)
+    workspace_id: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    workspace_name: Mapped[str] = mapped_column(String(200), nullable=False, default="")
+    workspace_icon: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    bot_id: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    access_token_enc: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    refresh_token_enc: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    token_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # connected | needs_reconnect | paused
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="connected")
+    database_id: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    database_title: Mapped[str] = mapped_column(String(200), nullable=False, default="")
+    last_error: Mapped[str] = mapped_column(String(200), nullable=False, default="")
+    connected_by: Mapped[str] = mapped_column(String(32), ForeignKey("users.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
+
+
+class NotionOAuthState(Base):
+    """Short-lived OAuth `state` bound to a club admin. Single use."""
+
+    __tablename__ = "notion_oauth_states"
+
+    state: Mapped[str] = mapped_column(String(64), primary_key=True)
+    club_id: Mapped[str] = mapped_column(String(32), ForeignKey("communities.id"), nullable=False)
+    user_id: Mapped[str] = mapped_column(String(32), ForeignKey("users.id"), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+
+class NotionJoinRow(Base):
+    """Idempotent record of a join-form write into a club's Notion database."""
+
+    __tablename__ = "notion_join_rows"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_new_notion_join_id)
+    club_id: Mapped[str] = mapped_column(String(32), ForeignKey("communities.id"), index=True, nullable=False)
+    event_id: Mapped[str] = mapped_column(String(32), ForeignKey("events.id"), index=True, nullable=False)
+    user_id: Mapped[str] = mapped_column(String(32), ForeignKey("users.id"), nullable=False)
+    notion_page_id: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    answers: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    # pending | synced | failed
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
+
+    __table_args__ = (UniqueConstraint("event_id", "user_id", name="uq_notion_join_event_user"),)

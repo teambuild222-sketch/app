@@ -42,6 +42,7 @@ import { NotificationsList } from './NotificationsList';
 import type { NotificationDto } from '../api/types';
 import { refreshStats } from '../api/statsApi';
 import { useLiveSync } from '../lib/useLiveSync';
+import { JoinFormModal } from './common/JoinFormModal';
 import { CreateEventModal } from './ExplorePage/CreateEventModal';
 import DiscoverPage from './DiscoverFeed/DiscoverPage';
 import ChatPage from './Chat/ChatPage';
@@ -134,6 +135,19 @@ export const Layout: React.FC = () => {
       : 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&h=300&q=80');
   const [fullName, setFullName] = useState(readFullName);
   const [avatar, setAvatar] = useState(readAvatar);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const notion = params.get('notion');
+    if (!notion) return;
+    if (notion === 'connected') toast.success('Notion connected');
+    if (notion === 'error') toast.error('Notion connect failed. Try again.');
+    params.delete('notion');
+    params.delete('club');
+    params.delete('reason');
+    const next = `${window.location.pathname}${params.toString() ? `?${params}` : ''}${window.location.hash}`;
+    window.history.replaceState({}, '', next);
+  }, []);
 
   useEffect(() => {
     // Demo defaults exist only for the offline mock mode. With a live backend the
@@ -918,6 +932,8 @@ export const Layout: React.FC = () => {
         mapEventScope={mapEventScope}
         onMapEventScopeChange={setMapEventScope}
       />
+
+      <JoinFormModal />
 
       {/* Premium Membership Modal */}
       <MembershipModal isOpen={isMembershipOpen} onClose={() => setIsMembershipOpen(false)} />

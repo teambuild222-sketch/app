@@ -1351,6 +1351,25 @@ html.simsor-mobile-app .profile-page {
   flex: 1;
 }
 
+.profile-verified-pill {
+  margin-left: 8px;
+  font-style: normal;
+  font-size: 0.68rem;
+  background: #d9efe4;
+  color: #176b45;
+  border-radius: 999px;
+  padding: 2px 7px;
+  vertical-align: middle;
+}
+
+.profile-community-integrations {
+  font-size: 0.72rem;
+  background: #eceff3;
+  border-radius: 999px;
+  padding: 5px 8px;
+  margin-right: 4px;
+}
+
 .profile-community-name {
   margin: 0;
   font-size: 15px;

@@ -34,7 +34,12 @@ os.environ.update(
         "APPLE_CLIENT_ID": "",
         "ADMIN_USERNAMES": "root",
         "REQUIRE_EMAIL_VERIFICATION": "false",
-        "PUBLIC_APP_URL": "",
+        "PUBLIC_APP_URL": "http://localhost:5173",
+        "NOTION_CLIENT_ID": "test-notion-id",
+        "NOTION_CLIENT_SECRET": "test-notion-secret",
+        "NOTION_REDIRECT_URI": "http://test/api/notion/oauth/callback",
+        "NOTION_WEBHOOK_SECRET": "test-webhook-secret",
+        "TOKEN_ENCRYPTION_KEY": "test-token-encryption-key-32chars",
     }
 )
 

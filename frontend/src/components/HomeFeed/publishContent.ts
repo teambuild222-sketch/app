@@ -50,6 +50,8 @@ export type CreateEventPayload = {
   createGroupChat?: boolean;
   /** Selected people lists for invite-only events. */
   inviteListIds?: string[];
+  /** Official verified club this event belongs to. */
+  communityId?: string;
 };
 
 /* ---------- User post storage ---------- */
@@ -345,6 +347,7 @@ export async function submitCreateEvent(data: CreateEventPayload): Promise<Publi
     inviteListIds,
     invitedMemberIds,
     startsAt,
+    communityId: data.communityId,
   });
 
   await publishEventRemote(data, remoteEvent);

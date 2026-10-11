@@ -91,6 +91,9 @@ Body: `{ "idToken" }` (Apple also accepts `fullName?`) → `AuthSession`. `501` 
 - `GET /api/dab-ups/:userId` → `{ "status": "none"|"pending"|"dabbed_up" }`; `GET /api/dab-ups/mine` → `{ "userIds": [] }`
 - `GET/POST /api/people-lists`, `PATCH/DELETE /api/people-lists/:id`
 - `GET/POST /api/communities`, `GET /api/communities/by-creator/:userId`, `POST/DELETE /api/communities/:id/join`
+- Official clubs: `GET /api/admin/communities`, `PATCH /api/admin/communities/:id/verification` `{ verified, note? }`
+- Notion (verified club admins only; 403 otherwise): `GET/DELETE /api/communities/:id/notion`, `POST .../notion/oauth/start`, `GET /api/notion/oauth/callback`, `POST .../notion/database`, `PUT .../join-form`, `POST .../notion/sync`, `POST /api/notion/webhook`
+- Join form: `GET /api/events/:id/join-form`, `POST /api/events/:id/join` may include `{ answers }`
 - `GET /api/affinity/mine`, `POST /api/affinity/track`
 - `POST /api/uploads` — multipart image/video → `201 { "url", "type": "image"|"video" }`
 

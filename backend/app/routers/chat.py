@@ -109,8 +109,25 @@ async def _to_message_dto(db: AsyncSession, message: Message) -> MessageDto:
     )
 
 
+async def _community_ids_for_conversations(
+    db: AsyncSession, conversation_ids: list[str]
+) -> dict[str, str]:
+    if not conversation_ids:
+        return {}
+    result = await db.execute(
+        select(Community.id, Community.conversation_id).where(Community.conversation_id.in_(conversation_ids))
+    )
+    return {conv_id: comm_id for comm_id, conv_id in result.all() if conv_id}
+
+
 async def _to_conversation_dto(
-    db: AsyncSession, conversation: Conversation, membership: ConversationMember, viewer_id: str
+    db: AsyncSession,
+    conversation: Conversation,
+    membership: ConversationMember,
+    viewer_id: str,
+    community_id: str | None = None,
+    *,
+    community_resolved: bool = False,
 ) -> ConversationDto:
     members_result = await db.execute(
         select(ConversationMember, User)
@@ -154,12 +171,17 @@ async def _to_conversation_dto(
     )
     unread = unread_result.scalar_one()
 
+    if not community_resolved:
+        found = await db.execute(select(Community.id).where(Community.conversation_id == conversation.id))
+        community_id = found.scalar_one_or_none()
+
     return ConversationDto(
         id=conversation.id,
         type=conversation.type,  # type: ignore[arg-type]
         name=name,
         avatarUrl=avatar_url,
         adminId=admin_id,
+        communityId=community_id,
         members=members,
         lastMessage=last_message_dto,
         unread=unread,
@@ -178,7 +200,13 @@ async def list_conversations(current_user: CurrentUser, db: DbSession) -> list[C
         .where(ConversationMember.user_id == current_user.id, ConversationMember.hidden.is_(False))
     )
     rows = result.all()
-    dtos = [await _to_conversation_dto(db, conv, membership, current_user.id) for conv, membership in rows]
+    community_ids = await _community_ids_for_conversations(db, [conv.id for conv, _ in rows])
+    dtos = [
+        await _to_conversation_dto(
+            db, conv, membership, current_user.id, community_ids.get(conv.id), community_resolved=True
+        )
+        for conv, membership in rows
+    ]
 
     dtos.sort(
         key=lambda d: (0 if d.pinned else 1, -(d.lastMessage.createdAt if d.lastMessage else d.updatedAt).timestamp())

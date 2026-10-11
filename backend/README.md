@@ -72,4 +72,5 @@ See [API_CONTRACT.md](./API_CONTRACT.md) — keep backend responses aligned with
 | Dab ups / chat | `frontend/src/api/socialApi.ts` | `/api/dab-ups`, `/api/conversations` |
 | Reports / blocks | — | `/api/reports`, `/api/blocks` |
 | Moderation (admins) | — | `/api/admin/*` |
+| Official club Notion | [NOTION.md](./NOTION.md) | `/api/communities/{id}/notion`, `/api/notion/*` |
 | Push registration | — | `/api/me/device-token` |

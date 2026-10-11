@@ -79,6 +79,14 @@ class Settings(BaseSettings):
     # counters across multiple API instances. Empty = in-memory (single instance).
     redis_url: str = ""
 
+    # --- Notion (official clubs only) ---
+    notion_client_id: str = ""
+    notion_client_secret: str = ""
+    notion_redirect_uri: str = ""
+    notion_webhook_secret: str = ""
+    # Fernet key material. Empty → derived from JWT_SECRET (dev only).
+    token_encryption_key: str = ""
+
     # --- Push notifications (FCM HTTP v1; also delivers to iOS via Firebase) ---
     push_enabled: bool = True
     # Firebase service-account JSON — either the raw JSON string or a path to the file.
