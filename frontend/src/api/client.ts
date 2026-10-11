@@ -115,6 +115,35 @@ export async function apiUpload<T>(url: string, file: File | Blob, filename?: st
   return data;
 }
 
+/** Human-readable message for a failed API call (FastAPI `detail`, timeouts, offline). */
+export function apiErrorMessage(err: unknown, fallback = 'Something went wrong. Please try again.'): string {
+  if (axios.isAxiosError(err)) {
+    const detail = (err.response?.data as { detail?: unknown } | undefined)?.detail;
+    if (typeof detail === 'string' && detail) return detail;
+    if (Array.isArray(detail) && detail.length) {
+      return detail
+        .map((d: { msg?: string; loc?: unknown[] }) => {
+          const field = Array.isArray(d.loc) ? String(d.loc[d.loc.length - 1]) : '';
+          const msg = (d.msg ?? '').replace(/^Value error, /, '');
+          return field && !msg.toLowerCase().startsWith(field.toLowerCase()) ? `${field}: ${msg}` : msg;
+        })
+        .join('. ');
+    }
+    if (err.code === 'ECONNABORTED') {
+      return 'The server is waking up. Please wait a few seconds and try again.';
+    }
+    if (!err.response) return "Can't reach the server. Check your internet connection.";
+    return fallback;
+  }
+  return err instanceof Error && err.message ? err.message : fallback;
+}
+
+/** Wakes a sleeping free-tier backend so the first real request isn't slow. */
+export function warmUpBackend(): void {
+  if (!isBackendEnabled()) return;
+  void getApiClient().get('/api/health', { timeout: 90000 }).catch(() => undefined);
+}
+
 /** Feature flag: true once VITE_API_URL points at a live backend. */
 export function isBackendEnabled(): boolean {
   return Boolean((import.meta.env.VITE_API_URL as string | undefined)?.trim());

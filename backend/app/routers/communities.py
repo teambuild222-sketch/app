@@ -5,6 +5,7 @@ from sqlalchemy import func, select
 from app.community_chat import add_member_to_community_chat, ensure_community_conversation
 from app.deps import CurrentUser, DbSession, OptionalCurrentUser
 from app.models import Community, CommunityMember
+from app.push import notify_users
 from app.schemas import CommunityCreate, CommunityDto, OkResponse
 
 router = APIRouter(prefix="/api/communities", tags=["communities"])
@@ -88,6 +89,13 @@ async def join_community(community_id: str, current_user: CurrentUser, db: DbSes
         db.add(CommunityMember(community_id=community.id, user_id=current_user.id, role="member"))
         await add_member_to_community_chat(db, community, current_user.id)
         await db.commit()
+        await notify_users(
+            db,
+            [community.created_by],
+            title=community.name,
+            body=f"{current_user.full_name or current_user.username} joined your club",
+            data={"type": "club_join", "communityId": community.id, "userId": current_user.id},
+        )
     return OkResponse(ok=True)
 
 

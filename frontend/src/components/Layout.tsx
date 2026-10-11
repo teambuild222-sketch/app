@@ -4,7 +4,8 @@ import { toast } from 'react-hot-toast';
 import { Navbar, TabType, MapEventScope } from './Navbar';
 import { useTheme } from '../themeContext';
 import ProfileView from './profile/ProfileView';
-import { ME_AUTHOR_ID } from './profile/profileData';
+import { DAB_UPS_CHANGED_EVENT, getDabUpStatus, ME_AUTHOR_ID, seedIncomingDabUp } from './profile/profileData';
+import { EVENT_ORGANIZERS, getCurrentViewerId } from './ExplorePage/exploreEvents';
 import PlayerCard from './PlayerCard/PlayerCard';
 import {
   Compass,
@@ -21,6 +22,7 @@ import {
   Menu,
   ChevronLeft,
   ChevronRight,
+  ArrowLeft,
   X,
   Plus,
   Sparkles,
@@ -32,7 +34,7 @@ import ExplorePage from './ExplorePage/ExplorePage';
 import HomePostCard from './HomeFeed/HomePostCard';
 import { HOME_FEED_POSTS, type HomeFeedPost, type HomeMainCategory } from './HomeFeed/homeFeed';
 import { buildFeed, FEED_CHANGED_EVENT } from './HomeFeed/feedAlgorithm';
-import { getInitialFeedPosts, loadFeedPosts } from './HomeFeed/feedSource';
+import { getInitialFeedPosts, loadFeedPosts, LIVE_POSTS_CHANGED_EVENT } from './HomeFeed/feedSource';
 import { isBackendEnabled } from '../api/client';
 import { initialAvatar } from '../lib/avatar';
 import { useNotifications } from '../lib/useNotifications';
@@ -51,6 +53,50 @@ import {
 } from './HomeFeed/publishContent';
 import { logout } from '../api';
 import './Layout.css';
+
+function demoNotifications(): NotificationDto[] {
+  const [requester, booster] = EVENT_ORGANIZERS;
+  const hoursAgo = (h: number) => new Date(Date.now() - h * 3600_000).toISOString();
+  const dabStatus = getDabUpStatus(requester.id);
+  return [
+    {
+      id: 'demo-dab',
+      title: 'New dab-up request',
+      body: `${requester.name} wants to dab up with you`,
+      data: {
+        type: 'dab_up_request',
+        userId: requester.id,
+        ...(dabStatus === 'incoming' ? {} : { status: dabStatus === 'dabbed_up' ? 'accepted' : 'denied' }),
+      },
+      read: false,
+      createdAt: hoursAgo(0.2),
+    },
+    {
+      id: 'demo-booster',
+      title: 'New booster',
+      body: `${booster.name} started boosting you`,
+      data: { type: 'follow', userId: booster.id },
+      read: false,
+      createdAt: hoursAgo(2),
+    },
+    {
+      id: 'demo-club',
+      title: 'Hyderabad Runners',
+      body: 'Sunday long run moves to 5:30am at KBR Park.',
+      data: { type: 'club_update' },
+      read: true,
+      createdAt: hoursAgo(26),
+    },
+    {
+      id: 'demo-badge',
+      title: 'Achievement',
+      body: 'Your badge Event Organizer has been unlocked!',
+      data: { type: 'badge' },
+      read: true,
+      createdAt: hoursAgo(72),
+    },
+  ];
+}
 
 export const Layout: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
@@ -123,11 +169,14 @@ export const Layout: React.FC = () => {
   }, []);
 
   const handleViewOrganizerProfile = (organizerId: string) => {
-    setViewingProfileId(organizerId === ME_AUTHOR_ID ? null : organizerId);
+    const viewerId = getCurrentViewerId();
+    const viewingSelf = organizerId === ME_AUTHOR_ID || organizerId === viewerId;
+    setViewingProfileId(viewingSelf ? null : organizerId);
     setActiveTab('profile');
   };
 
   const handleTabChange = (tab: TabType) => {
+    setIsNotificationsOpen(false);
     if (tab === 'profile') setViewingProfileId(null);
     setActiveTab(tab);
   };
@@ -161,10 +210,21 @@ export const Layout: React.FC = () => {
     void notifications.markAllRead();
     if (n.data?.type === 'like' || n.data?.type === 'comment') {
       setActiveTab('home');
+    } else if (n.data?.type === 'club_update' && n.data.conversationId) {
+      setPendingChatId(n.data.conversationId);
+      setActiveTab('chat');
     } else if (userId) {
       handleViewOrganizerProfile(userId);
     }
   };
+  const [, setDemoDabTick] = useState(0);
+  useEffect(() => {
+    if (live || !isNotificationsOpen) return;
+    const onDab = () => setDemoDabTick((v) => v + 1);
+    window.addEventListener(DAB_UPS_CHANGED_EVENT, onDab);
+    seedIncomingDabUp(EVENT_ORGANIZERS[0].id);
+    return () => window.removeEventListener(DAB_UPS_CHANGED_EVENT, onDab);
+  }, [live, isNotificationsOpen]);
   useLiveSync(() => {
     if (activeTab === 'home') bumpFeed();
     void refreshStats();
@@ -201,8 +261,6 @@ export const Layout: React.FC = () => {
     loadFeedPosts()
       .then((posts) => {
         if (cancelled) return;
-        // Keep the same array when nothing changed so background refreshes
-        // don't reshuffle or re-render the feed under the user's thumb.
         setFeedPosts((prev) => (JSON.stringify(prev) === JSON.stringify(posts) ? prev : posts));
       })
       .catch(() => {});
@@ -210,6 +268,15 @@ export const Layout: React.FC = () => {
       cancelled = true;
     };
   }, [feedVersion]);
+
+  useEffect(() => {
+    const onLive = () => {
+      const next = getInitialFeedPosts();
+      setFeedPosts((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next));
+    };
+    window.addEventListener(LIVE_POSTS_CHANGED_EVENT, onLive);
+    return () => window.removeEventListener(LIVE_POSTS_CHANGED_EVENT, onLive);
+  }, []);
 
   const feed = useMemo(() => buildFeed(feedPosts), [feedPosts]);
 
@@ -262,14 +329,14 @@ export const Layout: React.FC = () => {
     <div
       className={`simsor-app-shell ${activeTab === 'explore' ? 'explore-active' : ''} ${
         activeTab === 'chat' ? 'chat-active' : ''
-      } ${
+      } ${isNotificationsOpen ? 'notifications-active' : ''} ${
         activeTab === 'home' || activeTab === 'discover' || activeTab === 'chat' || activeTab === 'profile'
           ? 'home-active'
           : ''
       }`}
     >
-      {/* Fixed Header — hidden on Profile and Explore */}
-      {activeTab !== 'explore' && activeTab !== 'profile' && (
+      {/* Fixed Header — hidden on Profile, Explore, and full-page Notifications */}
+      {activeTab !== 'explore' && activeTab !== 'profile' && !isNotificationsOpen && (
         <header className="simsor-header">
           <div className="simsor-header-start" aria-hidden="true" />
 
@@ -488,9 +555,54 @@ export const Layout: React.FC = () => {
 
         {/* Main Panel Viewport */}
         <main className="simsor-main-panel">
-          
+
+          {isNotificationsOpen && (
+            <div className="notifications-page-view animate-fadeIn">
+              <header className="notifications-page-header">
+                <button
+                  type="button"
+                  className="notifications-page-back"
+                  onClick={closeNotifications}
+                  aria-label="Back"
+                >
+                  <ArrowLeft size={20} />
+                </button>
+                <div className="notifications-page-heading">
+                  <h1 className="notifications-page-title">Notifications</h1>
+                  <p className="notifications-page-subtitle">
+                    {live ? 'Live updates from your people' : 'Stay connected with your matches'}
+                  </p>
+                </div>
+                <div className="notifications-page-header-actions">
+                  {live && notifications.unread > 0 && (
+                    <>
+                      <button
+                        type="button"
+                        className="notifications-mark-read-btn"
+                        onClick={() => void notifications.markAllRead()}
+                      >
+                        Mark read
+                      </button>
+                      <span className="notifications-page-unread-pill">
+                        {notifications.unread > 9 ? '9+' : notifications.unread}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </header>
+              <div className="notifications-page-scroll">
+                <NotificationsList
+                  items={live ? notifications.items : demoNotifications()}
+                  onOpen={openNotification}
+                  onChanged={() => void notifications.refresh()}
+                  showFilters
+                />
+              </div>
+            </div>
+          )}
+
           {/* EXPLORE PAGE */}
-          {activeTab === 'explore' && (
+          {!isNotificationsOpen && activeTab === 'explore' && (
             <ExplorePage
               onViewOrganizerProfile={handleViewOrganizerProfile}
               focusTarget={exploreFocus}
@@ -500,7 +612,7 @@ export const Layout: React.FC = () => {
           )}
 
           {/* HOME PAGE – Instagram-style ranked event feed */}
-          {activeTab === 'home' && (
+          {!isNotificationsOpen && activeTab === 'home' && (
             <div className="home-feed-view home-feed-view--posts animate-fadeIn">
               <button
                 type="button"
@@ -559,7 +671,7 @@ export const Layout: React.FC = () => {
           )}
 
           {/* DISCOVER FEED */}
-          {activeTab === 'discover' && (
+          {!isNotificationsOpen && activeTab === 'discover' && (
             <DiscoverPage
               activeCategory={activeCategory}
               onCategoryChange={setActiveCategory}
@@ -571,7 +683,7 @@ export const Layout: React.FC = () => {
           )}
 
           {/* CHAT PAGE */}
-          {activeTab === 'chat' && (
+          {!isNotificationsOpen && activeTab === 'chat' && (
             <div className="chat-page-view animate-fadeIn">
               <ChatPage
                 feedPosts={feed}
@@ -579,12 +691,13 @@ export const Layout: React.FC = () => {
                 onCreateGroupOpenChange={setChatCreateGroupOpen}
                 initialChatId={pendingChatId}
                 onInitialChatConsumed={() => setPendingChatId(null)}
+                onViewProfile={handleViewOrganizerProfile}
               />
             </div>
           )}
 
           {/* PROFILE PAGE */}
-          {activeTab === 'profile' && (
+          {!isNotificationsOpen && activeTab === 'profile' && (
             <div className="profile-page-view animate-fadeIn">
               <ProfileView
                 userId={viewingProfileId}
@@ -797,47 +910,6 @@ export const Layout: React.FC = () => {
 
         </aside>
       </div>
-
-      {/* Slide-up Notifications Drawer (Used on mobile/tablet) */}
-      {isNotificationsOpen && (
-        <div className="ios-drawer-overlay" onClick={closeNotifications}>
-          <div className="ios-drawer-sheet animate-slideUp" onClick={(e) => e.stopPropagation()}>
-            <button className="ios-drawer-close-btn" onClick={closeNotifications} aria-label="Close">
-              <X size={20} />
-            </button>
-            <div className="ios-drawer-body">
-              <h3 className="ios-drawer-title">Notifications</h3>
-              <p className="ios-drawer-subtitle">{live ? "Live updates from your people" : "Stay connected with your matches"}</p>
-
-              {live ? (
-                <NotificationsList items={notifications.items} onOpen={openNotification} />
-              ) : (
-                <div className="panel-notifications-list">
-                <div className="panel-notif-item unread">
-                  <div className="panel-notif-dot" />
-                  <div className="panel-notif-info">
-                    <span className="panel-notif-text"><strong>Rahul Sharma</strong> wants to Dab Up with you.</span>
-                    <span className="panel-notif-time">2h ago</span>
-                  </div>
-                </div>
-                <div className="panel-notif-item">
-                  <div className="panel-notif-info">
-                    <span className="panel-notif-text">Cricket Match near <strong>Madhapur</strong> starts tomorrow.</span>
-                    <span className="panel-notif-time">1d ago</span>
-                  </div>
-                </div>
-                <div className="panel-notif-item">
-                  <div className="panel-notif-info">
-                    <span className="panel-notif-text">Your badge <strong>Event Organizer</strong> has been unlocked!</span>
-                    <span className="panel-notif-time">3d ago</span>
-                  </div>
-                </div>
-              </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Bottom Navigation Bar (Visible on Mobile <768px) */}
       <Navbar

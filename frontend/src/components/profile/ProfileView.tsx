@@ -38,7 +38,7 @@ import { isBackendEnabled } from '../../api/client';
 import { getCurrentViewerId } from '../ExplorePage/exploreEvents';
 import { uploadFile } from '../../api/uploadApi';
 import { fetchProfile } from '../../api/profileApi';
-import { refreshStats, STATS_CHANGED_EVENT } from '../../api/statsApi';
+import { patchCachedStats, refreshStats, STATS_CHANGED_EVENT } from '../../api/statsApi';
 import { requestPeople } from '../ExplorePage/exploreEvents';
 import { usePeopleVersion } from '../../lib/usePeople';
 import { useNotifications } from '../../lib/useNotifications';
@@ -66,7 +66,8 @@ import {
   isOwnProfileUser,
   sendDabUpRequest,
 } from './profileData';
-import { fetchDabUpStatus, requestDabUp } from '../../api/socialApi';
+import { fetchDabUpStatus, requestDabUp, respondDabUp } from '../../api/socialApi';
+import type { DabUpStatus } from '../../api/types';
 import { blockUser, deleteMyAccount, reportContent } from '../../api/trustApi';
 import {
   canCreateCommunityRemote,
@@ -202,7 +203,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       requestPeople([profileUserId]);
     }
     const target = isOwnProfile ? null : profileUserId;
-    void refreshStats(target);
+    void refreshStats(target, { force: true });
     const onTick = () => void refreshStats(target);
     window.addEventListener(LIVE_SYNC_EVENT, onTick);
     return () => {
@@ -266,7 +267,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const displayRole = isOwnProfile ? null : member.role;
 
   const [dabTick, setDabTick] = useState(0);
-  const [remoteDabStatus, setRemoteDabStatus] = useState<'none' | 'pending' | 'dabbed_up'>('none');
+  const [remoteDabStatus, setRemoteDabStatus] = useState<DabUpStatus>('none');
+  const [isRespondingDab, setIsRespondingDab] = useState(false);
   useEffect(() => {
     const onDab = () => setDabTick((v) => v + 1);
     window.addEventListener(DAB_UPS_CHANGED_EVENT, onDab);
@@ -287,16 +289,41 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const handleDabUp = () => {
     if (!profileUserId || dabStatus !== 'none') return;
     if (isBackendEnabled()) {
-      void requestDabUp(profileUserId).then((status) => {
-        setRemoteDabStatus(status);
-        toast.success(
-          status === 'dabbed_up' ? `You're dabbed up with ${displayName}!` : `Dab Up sent to ${displayName}`,
-        );
-      });
+      setRemoteDabStatus('pending');
+      void requestDabUp(profileUserId)
+        .then((status) => {
+          setRemoteDabStatus(status);
+          void refreshStats(null, { force: true });
+          void refreshStats(profileUserId, { force: true });
+          bumpStats();
+          toast.success(
+            status === 'dabbed_up' ? `You're dabbed up with ${displayName}!` : `Dab Up sent to ${displayName}`,
+          );
+        })
+        .catch(() => {
+          setRemoteDabStatus('none');
+          toast.error('Could not send Dab Up. Try again.');
+        });
       return;
     }
     sendDabUpRequest(profileUserId);
     toast.success(`Dab Up sent to ${displayName}`);
+  };
+
+  const handleRespondDab = (accept: boolean) => {
+    if (!profileUserId || dabStatus !== 'incoming' || isRespondingDab) return;
+    setIsRespondingDab(true);
+    void respondDabUp(profileUserId, accept)
+      .then((status) => {
+        setRemoteDabStatus(status);
+        setDabTick((v) => v + 1);
+        void refreshStats(null, { force: true });
+        void refreshStats(profileUserId, { force: true });
+        bumpStats();
+        toast.success(accept ? `You're dabbed up with ${displayName}!` : 'Dab Up request declined');
+      })
+      .catch(() => toast.error('Could not update the request. Try again.'))
+      .finally(() => setIsRespondingDab(false));
   };
 
   const handleDeleteAccount = () => {
@@ -325,8 +352,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const handleBoost = () => {
     if (!profileUserId) return;
     const nowFollowing = toggleFollow(profileUserId);
-    toast.success(nowFollowing ? `Boosting ${displayName}` : `Stopped boosting ${displayName}`);
+    const delta = nowFollowing ? 1 : -1;
+    patchCachedStats(null, { following: Math.max(0, getBoostingCount() + delta) });
+    patchCachedStats(profileUserId, { followers: Math.max(0, getMemberSocialCounts(profileUserId).boosters + delta) });
     bumpStats();
+    void refreshStats(null, { force: true });
+    void refreshStats(profileUserId, { force: true });
+    toast.success(nowFollowing ? `Boosting ${displayName}` : `Stopped boosting ${displayName}`);
   };
 
   const [isStartingChat, setIsStartingChat] = useState(false);
@@ -1157,15 +1189,43 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               Edit Profile
             </button>
           ) : (
+            <>
+            {dabStatus === 'incoming' && (
+              <div className="profile-dab-request">
+                <p className="profile-dab-request-text">
+                  <strong>{displayName}</strong> wants to Dab Up with you
+                </p>
+                <div className="profile-dab-request-actions">
+                  <button
+                    type="button"
+                    className="profile-dab-request-btn profile-dab-request-btn--confirm"
+                    onClick={() => handleRespondDab(true)}
+                    disabled={isRespondingDab}
+                  >
+                    Confirm
+                  </button>
+                  <button
+                    type="button"
+                    className="profile-dab-request-btn"
+                    onClick={() => handleRespondDab(false)}
+                    disabled={isRespondingDab}
+                  >
+                    Deny
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="profile-hero-actions">
-              <button
-                type="button"
-                className={`profile-action-btn profile-action-btn--primary ${dabStatus === 'dabbed_up' ? 'profile-action-btn--dabbed' : ''}`}
-                onClick={handleDabUp}
-                disabled={dabStatus !== 'none'}
-              >
-                {dabStatus === 'dabbed_up' ? 'Dabbed Up' : dabStatus === 'pending' ? 'Pending…' : 'Dab Up'}
-              </button>
+              {dabStatus !== 'incoming' && (
+                <button
+                  type="button"
+                  className={`profile-action-btn profile-action-btn--primary ${dabStatus === 'dabbed_up' ? 'profile-action-btn--dabbed' : ''}`}
+                  onClick={handleDabUp}
+                  disabled={dabStatus !== 'none'}
+                >
+                  {dabStatus === 'dabbed_up' ? 'Dabbed Up' : dabStatus === 'pending' ? 'Pending…' : 'Dab Up'}
+                </button>
+              )}
               <button
                 type="button"
                 className={`profile-action-btn ${isBoosting ? 'profile-action-btn--boosting' : 'profile-action-btn--primary'}`}
@@ -1194,6 +1254,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 </>
               )}
             </div>
+            </>
           )}
         </section>
         </div>

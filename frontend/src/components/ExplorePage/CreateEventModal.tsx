@@ -36,6 +36,14 @@ const OSM_ATTRIBUTION =
 
 const DEFAULT_CENTER: [number, number] = [17.3969, 78.4692];
 
+function todayInputValue(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 type NominatimResult = {
   place_id: number;
   display_name: string;
@@ -103,7 +111,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
   const [gameAccess, setGameAccess] = useState<GameAccess>('public');
   const [selectedInviteListIds, setSelectedInviteListIds] = useState<string[]>([]);
   const [peopleLists, setPeopleLists] = useState<PeopleList[]>(() => loadPeopleLists());
-  const [date, setDate] = useState('');
+  const [date, setDate] = useState(todayInputValue);
   const [time, setTime] = useState('');
   const [venue, setVenue] = useState('');
   const [description, setDescription] = useState('');
@@ -278,7 +286,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
     setSubCategory('Cricket');
     setGameAccess('public');
     setSelectedInviteListIds([]);
-    setDate('');
+    setDate(todayInputValue());
     setTime('');
     setVenue('');
     setDescription('');
@@ -306,6 +314,19 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
     }
     if (!eventName || !venue || !date || !time || !position) {
       alert('Please fill out all required fields and select a location on the map.');
+      return;
+    }
+    if (date < todayInputValue()) {
+      toast.error('Pick today or a future date. Past events cannot be hosted.');
+      setDate(todayInputValue());
+      return;
+    }
+    if (limitedSlots && joinCloseDate && joinCloseDate < todayInputValue()) {
+      toast.error('Joining cannot close on a past date.');
+      return;
+    }
+    if (limitedSlots && joinCloseDate && date && joinCloseDate > date) {
+      toast.error('Joining must close on or before the event date.');
       return;
     }
 
@@ -556,8 +577,9 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
                     <input
                       id="date"
                       type="date"
+                      min={todayInputValue()}
                       value={date}
-                      onChange={(e) => setDate(e.target.value)}
+                      onChange={(e) => setDate(e.target.value < todayInputValue() ? todayInputValue() : e.target.value)}
                       required
                     />
                   </div>
@@ -643,6 +665,8 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
                         <input
                           id="joinCloseDate"
                           type="date"
+                          min={todayInputValue()}
+                          max={date || undefined}
                           value={joinCloseDate}
                           onChange={(e) => setJoinCloseDate(e.target.value)}
                         />

@@ -43,7 +43,7 @@ export function pushRouteFor(data: Record<string, unknown> | undefined): string 
   if (!data) return null;
   // The app is tab-based (no per-user / per-event URLs yet), so only chat has a
   // meaningful deep link; everything else just opens the app.
-  return data.type === 'message' ? '/chat' : null;
+  return data.type === 'message' || data.type === 'club_update' ? '/chat' : null;
 }
 
 async function attachListeners(platform: PushPlatform) {

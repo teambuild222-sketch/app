@@ -68,7 +68,7 @@ import { PEOPLE_LISTS_CHANGED_EVENT } from '../HomeFeed/audienceLists';
 import type { MapEventScope } from '../Navbar';
 import { isBackendEnabled } from '../../api/client';
 import { LIVE_SYNC_EVENT } from '../../lib/useLiveSync';
-import { listEvents } from '../../api/eventsApi';
+import { getCachedEvents, listEvents } from '../../api/eventsApi';
 import { fetchPublicUser } from '../../api/usersApi';
 import type { EventDto } from '../../api/types';
 
@@ -214,7 +214,9 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
   // Load events — from the live API once a backend is configured, otherwise
   // from the local mock store (unchanged behavior when VITE_API_URL is unset).
   const backendEnabled = isBackendEnabled();
-  const [events, setEvents] = useState<ExploreEvent[]>(() => (backendEnabled ? [] : loadExploreEvents()));
+  const [events, setEvents] = useState<ExploreEvent[]>(() =>
+    backendEnabled ? getCachedEvents('Sports').map(eventDtoToExploreEvent) : loadExploreEvents(),
+  );
   const [isLoadingLiveEvents, setIsLoadingLiveEvents] = useState(backendEnabled);
 
   useEffect(() => {
@@ -298,7 +300,9 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
   // "nearby" control is added.
   const fetchLiveEvents = useCallback(async (categoryOverride?: 'Sports' | 'Entertainment', silent = false) => {
     if (!backendEnabled) return;
-    if (!silent) setIsLoadingLiveEvents(true);
+    if (!silent && getCachedEvents(categoryOverride ?? activeMainCategory).length === 0) {
+      setIsLoadingLiveEvents(true);
+    }
     try {
       const dtos = await listEvents({ mainCategory: categoryOverride ?? activeMainCategory });
       const fetched = dtos.map(eventDtoToExploreEvent);

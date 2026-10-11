@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { User, ArrowRight, Sparkles, Scan, X } from 'lucide-react';
 import PasswordInput from './PasswordInput';
 import SocialLoginButtons from './SocialLoginButtons';
 import { loginWithPassword } from '../../api';
-import { isBackendEnabled } from '../../api/client';
+import { apiErrorMessage, isBackendEnabled, warmUpBackend } from '../../api/client';
 import { forgotPassword, resetPassword } from '../../api/trustApi';
 import { signInWithGoogle, getGoogleClientId } from '../../api/googleAuth';
 import './LoginPage.css';
@@ -25,6 +25,10 @@ export const LoginPage: React.FC<LoginPageProps> = () => {
   const [resetToken, setResetToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [forgotMessage, setForgotMessage] = useState('');
+
+  useEffect(() => {
+    warmUpBackend();
+  }, []);
 
   // Quick-fill credentials for effortless testing
   const handleQuickFill = (e: React.MouseEvent) => {
@@ -50,7 +54,7 @@ export const LoginPage: React.FC<LoginPageProps> = () => {
       window.location.href = '/';
     } catch (err) {
       setIsLoading(false);
-      setError(err instanceof Error ? err.message : 'Invalid username or password');
+      setError(apiErrorMessage(err, 'Invalid username or password'));
     }
   };
 

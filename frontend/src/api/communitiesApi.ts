@@ -1,4 +1,5 @@
 import { apiGet, apiPost, isBackendEnabled } from './client';
+import { CACHE_TTL, cachedGet, DEVICE_CACHE_CLEARED, readCache, writeCache } from '../lib/deviceCache';
 import { API_ROUTES } from './types';
 import type { Community } from '../components/profile/communitiesStore';
 import { getCurrentViewerId } from '../components/ExplorePage/exploreEvents';
@@ -27,12 +28,26 @@ function mapDto(dto: CommunityDto): Community {
   };
 }
 
-let membershipCache: Community[] = [];
+let membershipCache: Community[] = readCache<Community[]>('communities:mine') ?? [];
 
-export async function hydrateCommunities(): Promise<void> {
+function persistMemberships(next: Community[]): void {
+  membershipCache = next;
+  writeCache('communities:mine', next);
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener(DEVICE_CACHE_CLEARED, () => {
+    membershipCache = [];
+  });
+}
+
+export async function hydrateCommunities(opts?: { force?: boolean }): Promise<void> {
   if (!isBackendEnabled()) return;
-  const rows = await apiGet<CommunityDto[]>(API_ROUTES.communities);
-  membershipCache = rows.map(mapDto);
+  const rows = await cachedGet('communities:raw', () => apiGet<CommunityDto[]>(API_ROUTES.communities), {
+    maxAgeMs: CACHE_TTL.communities,
+    force: opts?.force,
+  });
+  persistMemberships(rows.map(mapDto));
 }
 
 export function getMembershipCommunitiesCache(): Community[] {
@@ -56,13 +71,13 @@ export async function createCommunityRemote(input: {
     memberIds: input.memberIds ?? [],
   });
   const mapped = mapDto(dto);
-  membershipCache = [mapped, ...membershipCache];
+  persistMemberships([mapped, ...membershipCache]);
   return mapped;
 }
 
 export async function joinCommunityRemote(communityId: string): Promise<void> {
   await apiPost(API_ROUTES.communityJoin(communityId));
-  await hydrateCommunities();
+  await hydrateCommunities({ force: true });
 }
 
 export function canCreateCommunityRemote(): boolean {

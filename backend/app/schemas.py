@@ -1,9 +1,9 @@
 """Pydantic request/response models. Field names/casing mirror
 frontend/src/api/types.ts exactly (camelCase) so no mapping layer is needed."""
-from datetime import datetime
+from datetime import date, datetime, timezone
 from typing import Literal
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 MainCategory = Literal["Sports", "Entertainment"]
 GameAccess = Literal["public", "invite"]
@@ -124,6 +124,28 @@ class EventCreate(BaseModel):
         if not v.strip():
             raise ValueError("title is required")
         return v.strip()
+
+    @field_validator("startsAt")
+    @classmethod
+    def starts_not_before_today(cls, v: datetime | None) -> datetime | None:
+        if v is None:
+            return v
+        start = v if v.tzinfo else v.replace(tzinfo=timezone.utc)
+        if start.date() < datetime.now(timezone.utc).date():
+            raise ValueError("Event date cannot be in the past")
+        return v
+
+    @model_validator(mode="after")
+    def calendar_date_not_before_today(self) -> "EventCreate":
+        raw = (self.date or "").strip()
+        if len(raw) >= 10 and raw[4] == "-" and raw[7] == "-":
+            try:
+                chosen = date.fromisoformat(raw[:10])
+            except ValueError:
+                return self
+            if chosen < datetime.now(timezone.utc).date():
+                raise ValueError("Event date cannot be in the past")
+        return self
 
 
 class PublicUserProfile(BaseModel):
@@ -447,7 +469,7 @@ class BlockStatus(BaseModel):
     blocked: bool
 
 
-DabUpStatusLiteral = Literal["none", "pending", "dabbed_up"]
+DabUpStatusLiteral = Literal["none", "pending", "incoming", "dabbed_up"]
 
 
 class DabUpRequestBody(BaseModel):

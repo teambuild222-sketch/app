@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.blocks import blocked_ids_for, is_blocked_between
 from app.deps import CurrentUser, DbSession
-from app.models import Conversation, ConversationMember, Message, MessageReaction, Post, Event, User
+from app.models import Community, Conversation, ConversationMember, Message, MessageReaction, Post, Event, User
 from app.push import notify_users, preview
 from app.schemas import (
     ChatMemberDto,
@@ -372,13 +372,17 @@ async def _push_new_message(db: AsyncSession, conversation: Conversation, messag
         else:
             title, body = conversation.name or "New message", f"{sender_name}: {snippet}"
 
-        await notify_users(
-            db,
-            recipients,
-            title=title,
-            body=body,
-            data={"type": "message", "conversationId": conversation.id, "messageId": message.id},
-        )
+        data = {"type": "message", "conversationId": conversation.id, "messageId": message.id}
+        if conversation.type == "group":
+            community = (
+                await db.execute(select(Community).where(Community.conversation_id == conversation.id))
+            ).scalar_one_or_none()
+            # The club creator's posts are announcements: they land in members' notification feed.
+            if community is not None and community.created_by == sender.id:
+                title, body = community.name, f"{sender_name}: {snippet}"
+                data = {**data, "type": "club_update", "communityId": community.id, "userId": sender.id}
+
+        await notify_users(db, recipients, title=title, body=body, data=data)
     except Exception:  # noqa: BLE001 — a push problem must never fail a sent message
         import logging
 

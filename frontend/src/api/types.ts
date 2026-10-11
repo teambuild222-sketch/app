@@ -144,7 +144,7 @@ export type PublicUserDto = {
   eventsHosted: number;
 };
 
-export type DabUpStatus = 'none' | 'pending' | 'dabbed_up';
+export type DabUpStatus = 'none' | 'pending' | 'incoming' | 'dabbed_up';
 
 export type ConversationPreview = {
   id: string;

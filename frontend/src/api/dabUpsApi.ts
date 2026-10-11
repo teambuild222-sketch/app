@@ -1,11 +1,22 @@
 import { apiGet, isBackendEnabled } from './client';
+import { CACHE_TTL, cachedGet, DEVICE_CACHE_CLEARED, readCache } from '../lib/deviceCache';
 import { API_ROUTES } from './types';
 
-let dabbedUpIds: string[] = [];
+let dabbedUpIds: string[] = readCache<{ userIds: string[] }>('dabups:mine')?.userIds ?? [];
 
-export async function hydrateDabUps(): Promise<void> {
+if (typeof window !== 'undefined') {
+  window.addEventListener(DEVICE_CACHE_CLEARED, () => {
+    dabbedUpIds = [];
+  });
+}
+
+export async function hydrateDabUps(opts?: { force?: boolean }): Promise<void> {
   if (!isBackendEnabled()) return;
-  const res = await apiGet<{ userIds: string[] }>(API_ROUTES.dabUpsMine);
+  const res = await cachedGet<{ userIds: string[] }>(
+    'dabups:mine',
+    () => apiGet<{ userIds: string[] }>(API_ROUTES.dabUpsMine),
+    { maxAgeMs: CACHE_TTL.dabUps, force: opts?.force },
+  );
   dabbedUpIds = res.userIds;
 }
 

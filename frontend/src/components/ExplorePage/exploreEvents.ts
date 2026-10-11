@@ -1,6 +1,7 @@
 import { isBackendEnabled } from '../../api/client';
 import type { PublicUserDto } from '../../api/types';
 import { fetchPublicUser } from '../../api/usersApi';
+import { DEVICE_CACHE_CLEARED, loadCachedPeople } from '../../lib/deviceCache';
 import { avatarOrInitial, initialAvatar } from '../../lib/avatar';
 
 export type EventOrganizer = {
@@ -143,9 +144,9 @@ export function getCurrentViewerId(): string {
  */
 const REMOTE_ORGANIZER_CACHE = new Map<string, EventOrganizer>();
 
-export function cacheRemoteOrganizer(userId: string, profile: PublicUserDto): void {
+function organizerFromPublic(profile: PublicUserDto): EventOrganizer {
   const name = profile.fullName || profile.username;
-  REMOTE_ORGANIZER_CACHE.set(userId, {
+  return {
     id: profile.id,
     name,
     username: profile.username,
@@ -154,7 +155,11 @@ export function cacheRemoteOrganizer(userId: string, profile: PublicUserDto): vo
     bio: profile.bio,
     location: profile.location,
     eventsHosted: profile.eventsHosted,
-  });
+  };
+}
+
+export function cacheRemoteOrganizer(userId: string, profile: PublicUserDto): void {
+  REMOTE_ORGANIZER_CACHE.set(userId, organizerFromPublic(profile));
   bumpPeopleCache();
 }
 
@@ -180,6 +185,24 @@ export function getPeopleCacheVersion(): number {
 }
 
 const PEOPLE_REQUESTED = new Set<string>();
+
+function hydratePeopleFromDisk(): void {
+  const people = loadCachedPeople<PublicUserDto>();
+  if (!people.length) return;
+  for (const profile of people) {
+    REMOTE_ORGANIZER_CACHE.set(profile.id, organizerFromPublic(profile));
+    PEOPLE_REQUESTED.add(profile.id);
+  }
+}
+
+hydratePeopleFromDisk();
+
+if (typeof window !== 'undefined') {
+  window.addEventListener(DEVICE_CACHE_CLEARED, () => {
+    REMOTE_ORGANIZER_CACHE.clear();
+    PEOPLE_REQUESTED.clear();
+  });
+}
 
 /** Fire-and-forget: fetch real profiles for ids we haven't seen yet. */
 export function requestPeople(ids: Array<string | null | undefined>): void {

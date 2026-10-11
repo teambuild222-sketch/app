@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import AuthLayout from './components/auth/AuthLayout';
 import MobileAppFrame from './components/MobileAppFrame/MobileAppFrame';
 import { AUTH_CHANGED_EVENT, isLoggedIn, restoreRealtimeAuthOnBoot } from './api';
+import { prefetchAppShell } from './lib/prefetchApp';
 import './App.css';
 
 /** Routes a tapped push notification (see lib/pushNotifications.ts). */
@@ -27,6 +28,7 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     restoreRealtimeAuthOnBoot();
+    prefetchAppShell();
   }, []);
 
   useEffect(() => {

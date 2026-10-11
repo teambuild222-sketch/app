@@ -20,9 +20,9 @@ import {
   X,
 } from 'lucide-react';
 import type { HomeFeedPost } from '../HomeFeed/homeFeed';
-import { ME_AUTHOR_ID } from '../ExplorePage/exploreEvents';
+import { getCurrentViewerId, ME_AUTHOR_ID } from '../ExplorePage/exploreEvents';
 import toast from 'react-hot-toast';
-import { isBackendEnabled } from '../../api/client';
+import { apiErrorMessage, isBackendEnabled } from '../../api/client';
 import { bytesFromMb, PICK_MAX_MB, uploadKindFromFile } from '../../lib/mediaUpload';
 import { listUsers } from '../../api/usersApi';
 import {
@@ -31,6 +31,7 @@ import {
   createDirectMessage,
   createGroup,
   deleteConversation,
+  ensureContactsLoaded,
   ensureRemoteMessagesLoaded,
   getAllConversations,
   getAvailableContacts,
@@ -71,7 +72,18 @@ type ChatPageProps = {
   onCreateGroupOpenChange?: (open: boolean) => void;
   initialChatId?: string | null;
   onInitialChatConsumed?: () => void;
+  onViewProfile?: (userId: string) => void;
 };
+
+function getDirectChatPeerId(chat: ChatConversation): string | null {
+  if (chat.type !== 'dm') return null;
+  const viewerId = getCurrentViewerId();
+  const isSelf = (id: string) => id === ME_AUTHOR_ID || id === viewerId;
+  const peer = chat.members.find((m) => m.id && !isSelf(m.id));
+  if (peer) return peer.id;
+  const otherAuthor = chat.messages.find((m) => m.authorId && !isSelf(m.authorId));
+  return otherAuthor?.authorId ?? null;
+}
 
 type InboxFilter = 'chats' | 'communities';
 
@@ -99,6 +111,7 @@ export default function ChatPage({
   onCreateGroupOpenChange,
   initialChatId = null,
   onInitialChatConsumed,
+  onViewProfile,
 }: ChatPageProps) {
   const [conversations, setConversations] = useState<ChatConversation[]>(() => getAllConversations());
   const [activeChatId, setActiveChatId] = useState<string>(() => getAllConversations()[0]?.id ?? '');
@@ -172,6 +185,10 @@ export default function ChatPage({
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [sessionActionTarget, setSessionActionTarget] = useState<ChatConversation | null>(null);
   const [showNewChat, setShowNewChat] = useState(false);
+
+  useEffect(() => {
+    if (showCreateGroup || showNewChat) ensureContactsLoaded(true);
+  }, [showCreateGroup, showNewChat]);
   const [startingChatWith, setStartingChatWith] = useState<string | null>(null);
   const [contacts, setContacts] = useState<ChatMember[]>(() => getAvailableContacts());
   const [peopleQuery, setPeopleQuery] = useState('');
@@ -369,12 +386,19 @@ export default function ChatPage({
   };
 
   const handleCreateGroup = async () => {
-    const created = await createGroup(groupName, selectedMembers);
-    if (created) {
+    if (!groupName.trim() || selectedMembers.length === 0) return;
+    try {
+      const created = await createGroup(groupName, selectedMembers);
+      if (!created) {
+        toast.error('Could not create the group. Try again.');
+        return;
+      }
       closeCreateGroup();
       setGroupName('');
       setSelectedMembers([]);
       openConversation(created.id);
+    } catch (err) {
+      toast.error(apiErrorMessage(err, 'Could not create the group. Try again.'));
     }
   };
 
@@ -412,6 +436,20 @@ export default function ChatPage({
     toggleReaction(reactionTarget.chatId, reactionTarget.messageId, emoji);
     setReactionTarget(null);
   };
+
+  const handleThreadIdentityClick = useCallback(() => {
+    if (!activeChat) return;
+    if (activeChat.type === 'dm') {
+      const peerId = getDirectChatPeerId(activeChat);
+      if (peerId) {
+        onViewProfile?.(peerId);
+      } else {
+        toast.error('Could not open this profile right now.');
+      }
+      return;
+    }
+    setShowMembers(true);
+  }, [activeChat, onViewProfile]);
 
   const renderMessage = (msg: ChatMessage, chat: ChatConversation) => {
     const reactions = groupReactions(msg.reactions);
@@ -475,7 +513,9 @@ export default function ChatPage({
               <img src={msg.mediaUrl} alt="" className="chat-shared-media" />
             )}
 
-            <span className="chat-bubble-time">{msg.time}</span>
+            <div className="chat-bubble-footer">
+              <span className="chat-bubble-time">{msg.time}</span>
+            </div>
           </div>
 
           {reactions.length > 0 && (
@@ -659,18 +699,18 @@ export default function ChatPage({
                             {muted && <BellOff size={11} className="chat-session-status-icon is-muted" aria-hidden="true" />}
                             {session.name}
                           </span>
+                          <span className="chat-session-time">{last?.time ?? ''}</span>
                         </div>
-                        <span className="chat-session-preview">
-                          {last ? messagePreview(last) : 'No messages yet'}
-                        </span>
-                      </div>
-                      <div className="chat-session-meta">
-                        <span className="chat-session-time">{last?.time ?? ''}</span>
-                        {hasUnread && (
-                          <span className="chat-session-unread-badge">
-                            {(session.unread ?? 0) > 9 ? '9+' : session.unread}
+                        <div className="chat-session-preview-row">
+                          <span className="chat-session-preview">
+                            {last ? messagePreview(last) : 'No messages yet'}
                           </span>
-                        )}
+                          {hasUnread && (
+                            <span className="chat-session-unread-badge">
+                              {(session.unread ?? 0) > 9 ? '9+' : session.unread}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </button>
                   </div>
@@ -696,9 +736,14 @@ export default function ChatPage({
               <button
                 type="button"
                 className="chat-thread-user"
-                onClick={() => activeChat.type !== 'dm' && setShowMembers(true)}
+                aria-label={
+                  activeChat.type === 'dm'
+                    ? `View ${activeChat.name}'s profile`
+                    : `View ${activeChat.name} details`
+                }
+                onClick={handleThreadIdentityClick}
               >
-                <div className="chat-thread-avatar-wrap">
+                <div className={`chat-thread-avatar-wrap${activeChat.online ? ' has-glow' : ''}`}>
                   <img src={activeChat.avatar} alt="" />
                   {activeChat.online && <span className="chat-online-dot pulse" />}
                 </div>
@@ -727,7 +772,9 @@ export default function ChatPage({
                     )}
                   </div>
                 </div>
-                {activeChat.type !== 'dm' && <ChevronRight size={16} className="chat-thread-chevron" />}
+                {(activeChat.type !== 'dm' || getDirectChatPeerId(activeChat)) && (
+                  <ChevronRight size={16} className="chat-thread-chevron" aria-hidden="true" />
+                )}
               </button>
 
               <div className="chat-thread-actions">
@@ -1128,9 +1175,40 @@ function AddMemberSection({
   contacts: ChatMember[];
 }) {
   const [open, setOpen] = useState(false);
-  const available = contacts.filter((c) => c.id !== ME_AUTHOR_ID && !existingIds.includes(c.id));
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<ChatMember[] | null>(null);
+  const available = (results ?? contacts).filter((c) => c.id !== ME_AUTHOR_ID && !existingIds.includes(c.id));
 
-  if (available.length === 0) return null;
+  useEffect(() => {
+    if (open) ensureContactsLoaded(true);
+  }, [open]);
+
+  useEffect(() => {
+    const term = query.trim().replace(/^@/, '');
+    if (!term || !isBackendEnabled()) {
+      setResults(null);
+      return;
+    }
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void listUsers(term).then((users) => {
+        if (cancelled) return;
+        setResults(
+          users.map((u) => ({
+            id: u.id,
+            name: u.fullName || u.username,
+            avatar: u.avatarUrl,
+            role: 'Member',
+            username: u.username,
+          })),
+        );
+      });
+    }, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [query]);
 
   return (
     <div className="chat-add-member">
@@ -1141,6 +1219,12 @@ function AddMemberSection({
       </button>
       {open && (
         <div className="chat-add-member-list">
+          <PeopleSearchInput value={query} onChange={setQuery} />
+          {available.length === 0 && (
+            <p className="chat-modal-label">
+              {query.trim() ? 'No one found with that name or username.' : 'Search for people to add.'}
+            </p>
+          )}
           {available.map((contact) => (
             <button
               key={contact.id}

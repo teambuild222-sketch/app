@@ -35,6 +35,7 @@ import {
 } from '../../api/chatApi';
 import { listUsers } from '../../api/usersApi';
 import type { ConversationDto, MessageDto, PublicUserDto } from '../../api/types';
+import { CACHE_UPDATED, DEVICE_CACHE_CLEARED, readCache, writeCache } from '../../lib/deviceCache';
 import {
   broadcastTyping as broadcastTypingRealtime,
   subscribeToConversation as subscribeToConversationRealtime,
@@ -161,19 +162,60 @@ function notifyChatStoreChanged(): void {
 // Stale-while-revalidate caches, same pattern as feedAlgorithm.ts's follow
 // graph / affinity — keeps every exported function below synchronous even
 // though the real data now comes from network calls.
-let remoteConversations: ConversationDto[] | null = null;
+let remoteConversations: ConversationDto[] | null = readCache<ConversationDto[]>('chat:inbox');
 let remoteConversationsRefreshInFlight: Promise<void> | null = null;
 const remoteMessagesById = new Map<string, MessageDto[]>();
 const remoteMessagesLoadedIds = new Set<string>();
+
+function hydrateCachedThreads(): void {
+  for (const c of (remoteConversations ?? []).slice(0, 10)) {
+    if (remoteMessagesById.has(c.id)) continue;
+    const msgs = readCache<MessageDto[]>(`chat:msgs:${c.id}`);
+    if (msgs?.length) remoteMessagesById.set(c.id, msgs);
+  }
+}
+
+hydrateCachedThreads();
+
+if (typeof window !== 'undefined') {
+  window.addEventListener(DEVICE_CACHE_CLEARED, () => {
+    remoteConversations = null;
+    remoteConversationsRefreshInFlight = null;
+    remoteMessagesById.clear();
+    remoteMessagesLoadedIds.clear();
+  });
+  window.addEventListener(CACHE_UPDATED, (event) => {
+    const key = (event as CustomEvent<string>).detail;
+    if (key === 'chat:inbox') {
+      const list = readCache<ConversationDto[]>('chat:inbox');
+      if (list) {
+        remoteConversations = list;
+        hydrateCachedThreads();
+        notifyChatStoreChanged();
+      }
+      return;
+    }
+    if (typeof key === 'string' && key.startsWith('chat:msgs:')) {
+      const msgs = readCache<MessageDto[]>(key);
+      if (msgs) {
+        remoteMessagesById.set(key.slice('chat:msgs:'.length), msgs);
+        notifyChatStoreChanged();
+      }
+    }
+  });
+}
 const remotePresenceById = new Map<string, ChatPresenceState>();
 let activeRemoteChatId: string | null = null;
 
-function refreshRemoteConversations(): Promise<void> {
+function refreshRemoteConversations(force = false): Promise<void> {
   if (remoteConversationsRefreshInFlight) return remoteConversationsRefreshInFlight;
-  remoteConversationsRefreshInFlight = listConversationsRemote()
+  remoteConversationsRefreshInFlight = listConversationsRemote({ force })
     .then((list) => {
       remoteConversations = list;
+      writeCache('chat:inbox', list);
+      hydrateCachedThreads();
       notifyChatStoreChanged();
+      list.slice(0, 6).forEach((c) => ensureRemoteMessagesLoaded(c.id));
     })
     .catch(() => {
       remoteConversations = remoteConversations ?? [];
@@ -190,6 +232,7 @@ function optimisticallyUpdateRemoteConversation(
 ): void {
   if (!remoteConversations) return;
   remoteConversations = remoteConversations.map((c) => (c.id === chatId ? updater(c) : c));
+  writeCache('chat:inbox', remoteConversations);
   notifyChatStoreChanged();
 }
 
@@ -254,8 +297,10 @@ function remoteToChatConversation(dto: ConversationDto): ChatConversation {
 function appendRemoteMessage(chatId: string, message: MessageDto): void {
   const existing = remoteMessagesById.get(chatId) ?? [];
   if (existing.some((m) => m.id === message.id)) return; // de-dupe our own send echoed back over realtime
-  remoteMessagesById.set(chatId, [...existing, message]);
+  const next = [...existing, message];
+  remoteMessagesById.set(chatId, next);
   remoteMessagesLoadedIds.add(chatId);
+  writeCache(`chat:msgs:${chatId}`, next);
   optimisticallyUpdateRemoteConversation(chatId, (c) => ({ ...c, lastMessage: message, updatedAt: message.createdAt }));
 }
 
@@ -263,11 +308,20 @@ function appendRemoteMessage(chatId: string, message: MessageDto): void {
  * it's opened. Safe to call repeatedly — no-ops once loaded (realtime/sends
  * keep the cache fresh after that). Exported for ChatPage to call on open. */
 export function ensureRemoteMessagesLoaded(chatId: string): void {
-  if (!isRemoteChatId(chatId) || remoteMessagesLoadedIds.has(chatId)) return;
+  if (!isRemoteChatId(chatId)) return;
+  if (!remoteMessagesById.has(chatId)) {
+    const cached = readCache<MessageDto[]>(`chat:msgs:${chatId}`);
+    if (cached?.length) {
+      remoteMessagesById.set(chatId, cached);
+      notifyChatStoreChanged();
+    }
+  }
+  if (remoteMessagesLoadedIds.has(chatId)) return;
   remoteMessagesLoadedIds.add(chatId);
   getMessagesRemote(chatId)
     .then((messages) => {
       remoteMessagesById.set(chatId, messages);
+      writeCache(`chat:msgs:${chatId}`, messages);
       notifyChatStoreChanged();
     })
     .catch(() => {
@@ -331,16 +385,17 @@ export function openRemoteConversationRealtime(chatId: string): void {
  * (phone sleep, flaky wifi). Called by the app-wide live sync tick. */
 export function syncChatsFromServer(): void {
   if (!isBackendEnabled()) return;
-  void refreshRemoteConversations();
+  void refreshRemoteConversations(true);
   const chatId = activeRemoteChatId;
   if (!chatId) return;
-  getMessagesRemote(chatId)
+  getMessagesRemote(chatId, undefined, { force: true })
     .then((messages) => {
       const current = remoteMessagesById.get(chatId) ?? [];
       const lastNew = messages[messages.length - 1]?.id;
       const lastOld = current[current.length - 1]?.id;
       if (messages.length !== current.length || lastNew !== lastOld) {
         remoteMessagesById.set(chatId, messages);
+        writeCache(`chat:msgs:${chatId}`, messages);
         notifyChatStoreChanged();
       }
     })
@@ -380,6 +435,7 @@ export async function createDirectMessage(userId: string): Promise<ChatConversat
   try {
     const dto = await createConversationRemote({ type: 'dm', memberIds: [userId] });
     remoteConversations = [dto, ...(remoteConversations ?? []).filter((c) => c.id !== dto.id)];
+    writeCache('chat:inbox', remoteConversations);
     notifyChatStoreChanged();
     return remoteToChatConversation(dto);
   } catch {
@@ -551,6 +607,7 @@ function saveHiddenChatIds(chatIds: string[]): void {
 export function deleteConversation(chatId: string): boolean {
   if (isRemoteChatId(chatId)) {
     remoteConversations = (remoteConversations ?? []).filter((c) => c.id !== chatId);
+    writeCache('chat:inbox', remoteConversations);
     notifyChatStoreChanged();
     void deleteConversationRemote(chatId).catch(() => {
       void refreshRemoteConversations(); // undo the optimistic removal if the request actually failed
@@ -827,12 +884,12 @@ export function getAllConversations(): ChatConversation[] {
   return sortConversationsByPinAndActivity(all);
 }
 
-let remoteContactsCache: PublicUserDto[] | null = null;
+let remoteContactsCache: PublicUserDto[] | null = readCache<PublicUserDto[]>('users:all');
 let remoteContactsRefreshInFlight: Promise<void> | null = null;
 
-function refreshRemoteContacts(): Promise<void> {
+function refreshRemoteContacts(force = false): Promise<void> {
   if (remoteContactsRefreshInFlight) return remoteContactsRefreshInFlight;
-  remoteContactsRefreshInFlight = listUsers()
+  remoteContactsRefreshInFlight = listUsers(undefined, { force })
     .then((users) => {
       remoteContactsCache = users;
       notifyChatStoreChanged();
@@ -844,6 +901,13 @@ function refreshRemoteContacts(): Promise<void> {
       remoteContactsRefreshInFlight = null;
     });
   return remoteContactsRefreshInFlight;
+}
+
+/** Reload the people directory. Empty lists retry; `force` hits the server. */
+export function ensureContactsLoaded(force = false): void {
+  if (!isBackendEnabled()) return;
+  if (!force && remoteContactsCache && remoteContactsCache.length > 0) return;
+  void refreshRemoteContacts(force || !remoteContactsCache?.length);
 }
 
 /** Contacts for starting a DM / adding group members. Real user directory
@@ -1131,10 +1195,11 @@ export async function createGroup(name: string, memberIds: string[]): Promise<Ch
     try {
       const dto = await createConversationRemote({ type: 'group', name: trimmed, memberIds });
       remoteConversations = [dto, ...(remoteConversations ?? [])];
+      writeCache('chat:inbox', remoteConversations);
       notifyChatStoreChanged();
       return remoteToChatConversation(dto);
-    } catch {
-      return null;
+    } catch (err) {
+      throw err instanceof Error ? err : new Error('Could not create the group');
     }
   }
 
@@ -1288,6 +1353,7 @@ export function addGroupMember(chatId: string, memberId: string): boolean {
     void addGroupMemberRemote(chatId, memberId)
       .then((dto) => {
         remoteConversations = (remoteConversations ?? []).map((c) => (c.id === chatId ? dto : c));
+        writeCache('chat:inbox', remoteConversations);
         notifyChatStoreChanged();
       })
       .catch(() => {});

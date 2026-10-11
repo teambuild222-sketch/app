@@ -8,7 +8,7 @@ import {
   type HomeFeedPost,
   getPostAuthor,
 } from '../HomeFeed/homeFeed';
-import { getInitialFeedPosts, loadFeedPosts } from '../HomeFeed/feedSource';
+import { getInitialFeedPosts, loadFeedPosts, LIVE_POSTS_CHANGED_EVENT } from '../HomeFeed/feedSource';
 import { listUsers } from '../../api/usersApi';
 import { LIVE_SYNC_EVENT } from '../../lib/useLiveSync';
 import { usePeopleVersion } from '../../lib/usePeople';
@@ -123,6 +123,15 @@ export const DiscoverPage: React.FC<DiscoverPageProps> = ({
       cancelled = true;
     };
   }, [feedVersion]);
+
+  useEffect(() => {
+    const onLive = () => {
+      const next = getInitialFeedPosts();
+      setRawPosts((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next));
+    };
+    window.addEventListener(LIVE_POSTS_CHANGED_EVENT, onLive);
+    return () => window.removeEventListener(LIVE_POSTS_CHANGED_EVENT, onLive);
+  }, []);
 
   const allPosts = useMemo(
     () => rawPosts.filter((post) => isAllowedFeedCategory(post.category)),

@@ -1,6 +1,6 @@
 """GET/PATCH/DELETE /api/me — the authenticated user's own profile."""
 from fastapi import APIRouter, Query
-from sqlalchemy import delete, func, or_, select
+from sqlalchemy import case, delete, func, or_, select
 
 from app.account_cleanup import delete_user_account
 from app.deps import CurrentUser, DbSession
@@ -44,9 +44,10 @@ async def my_stats(current_user: CurrentUser, db: DbSession) -> MeStatsDto:
 
 
 async def compute_user_stats(db: DbSession, uid: str) -> MeStatsDto:
+    peer = case((DabUp.requester_id == uid, DabUp.target_id), else_=DabUp.requester_id)
     dab = (
         await db.execute(
-            select(func.count())
+            select(func.count(func.distinct(peer)))
             .select_from(DabUp)
             .where(DabUp.status == "dabbed_up")
             .where(or_(DabUp.requester_id == uid, DabUp.target_id == uid))

@@ -10,7 +10,8 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [tailwindcss(), react()],
-    base: './',
+    // Hosted web needs absolute asset paths for deep links; Capacitor keeps relative.
+    base: mode === 'web' ? '/' : './',
     build: {
       outDir: 'dist',
       assetsInlineLimit: 0,

@@ -10,6 +10,8 @@ import { hydrateCommunities } from './communitiesApi';
 import { ensurePeopleListsHydrated } from '../components/HomeFeed/audienceLists';
 import { syncRealtimeAuth } from '../lib/supabaseClient';
 import { registerForPush, unregisterPush } from '../lib/pushNotifications';
+import { clearDeviceCache } from '../lib/deviceCache';
+import { prefetchAppShell } from '../lib/prefetchApp';
 
 export const AUTH_FLAG_KEY = 'simsor-auth';
 export const AUTH_CHANGED_EVENT = 'simsor-auth-changed';
@@ -59,6 +61,9 @@ export function getLocalProfile(): UserProfile {
   };
 }
 
+// A sleeping free-tier backend can take ~60s to answer the first request.
+const AUTH_TIMEOUT_MS = 90000;
+
 function persistLocalSession(user: Partial<UserProfile> & { username: string; fullName: string }) {
   localStorage.setItem(AUTH_FLAG_KEY, 'true');
   localStorage.setItem(PROFILE_KEYS.username, user.username);
@@ -83,6 +88,7 @@ function applyLiveSession(session: AuthSession) {
   void hydrateCommunities();
   void ensurePeopleListsHydrated();
   void registerForPush();
+  prefetchAppShell();
 }
 
 /** Apply a live API session (password, Google, Apple, signup). */
@@ -104,6 +110,7 @@ export function restoreRealtimeAuthOnBoot(): void {
     void hydrateCommunities();
     void ensurePeopleListsHydrated();
     void registerForPush();
+    prefetchAppShell();
   }
 }
 
@@ -115,10 +122,11 @@ export async function loginWithPassword(username: string, password: string): Pro
   }
 
   if (isBackendEnabled()) {
-    const session = await apiPost<AuthSession>(API_ROUTES.login, {
-      username: u,
-      password: p,
-    });
+    const session = await apiPost<AuthSession>(
+      API_ROUTES.login,
+      { username: u, password: p },
+      { timeout: AUTH_TIMEOUT_MS },
+    );
     applyLiveSession(session);
     return session.user;
   }
@@ -144,12 +152,11 @@ export async function signupAccount(payload: {
   }
 
   if (isBackendEnabled()) {
-    const session = await apiPost<AuthSession>(API_ROUTES.signup, {
-      username,
-      password,
-      fullName,
-      email: payload.email,
-    });
+    const session = await apiPost<AuthSession>(
+      API_ROUTES.signup,
+      { username, password, fullName, email: payload.email || undefined },
+      { timeout: AUTH_TIMEOUT_MS },
+    );
     applyLiveSession(session);
     return session.user;
   }
@@ -167,6 +174,7 @@ export function clearLocalSession(): void {
     // Never let the next account to sign in on this device inherit this one's identity / counters.
     Object.values(PROFILE_KEYS).forEach((key) => localStorage.removeItem(key));
     clearStatsCache();
+    clearDeviceCache('all');
   }
   emitAuthChanged();
 }

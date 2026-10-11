@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { User, Mail, Phone, Lock, Check, ArrowLeft } from 'lucide-react';
 import PasswordInput from './PasswordInput';
 import SocialLoginButtons from './SocialLoginButtons';
 import { signupAccount } from '../../api';
-import { isBackendEnabled } from '../../api/client';
+import { apiErrorMessage, isBackendEnabled, warmUpBackend } from '../../api/client';
 import { signInWithGoogle, getGoogleClientId } from '../../api/googleAuth';
 import './SignupPage.css';
 
@@ -23,6 +23,10 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onBackToLogin }) => {
   const [agreeTerms, setAgreeTerms] = useState(true); // default true for convenience
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    warmUpBackend();
+  }, []);
 
   // Interest selection lists
   const [selectedSports, setSelectedSports] = useState<string[]>(['Cricket', 'Football']);
@@ -65,8 +69,13 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onBackToLogin }) => {
   const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!fullName || !username || !email || !phone || !password || !confirmPassword) {
-      setError('Please fill in all registration fields');
+    if (!fullName.trim() || !username.trim() || !email.trim() || !password || !confirmPassword) {
+      setError('Please fill in your name, username, email and password');
+      return;
+    }
+
+    if (username.trim().length < 3 || password.trim().length < 3) {
+      setError('Username and password must be at least 3 characters');
       return;
     }
 
@@ -95,11 +104,9 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onBackToLogin }) => {
       window.location.href = '/';
     } catch (err) {
       setIsLoading(false);
-      setError(err instanceof Error ? err.message : 'Signup failed');
+      setError(apiErrorMessage(err, 'Signup failed. Please try again.'));
     }
   };
-
-  const isFormValid = fullName && username && email && phone && password && confirmPassword && (password === confirmPassword) && agreeTerms;
 
   return (
     <div className="ios-auth-card-body signup-body">
@@ -186,7 +193,7 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onBackToLogin }) => {
 
         {/* Phone Input with Country Code Selector */}
         <div className="ios-form-group">
-          <label className="ios-input-label" htmlFor="phone">Phone Number</label>
+          <label className="ios-input-label" htmlFor="phone">Phone Number (optional)</label>
           <div className="ios-phone-input-container">
             <div className="ios-country-selector">
               <span className="ios-country-display">{countryCode}</span>
@@ -332,7 +339,7 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onBackToLogin }) => {
         <button
           type="submit"
           className={`ios-primary-btn signup-btn ${isLoading ? 'loading' : ''}`}
-          disabled={isLoading || !isFormValid}
+          disabled={isLoading}
         >
           {isLoading ? (
             <span className="ios-spinner" />

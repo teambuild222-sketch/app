@@ -9,6 +9,7 @@
  * Realtime — see frontend/src/lib/chatRealtime.ts. This file is REST only.
  */
 import { apiDelete, apiGet, apiPatch, apiPost } from './client';
+import { CACHE_TTL, cachedGet, invalidateCache } from '../lib/deviceCache';
 import {
   API_ROUTES,
   type ChatReactionDto,
@@ -19,20 +20,36 @@ import {
   type MessageDto,
 } from './types';
 
-export async function listConversationsRemote(): Promise<ConversationDto[]> {
-  return apiGet<ConversationDto[]>(API_ROUTES.conversations);
+export async function listConversationsRemote(opts?: { force?: boolean }): Promise<ConversationDto[]> {
+  return cachedGet('chat:inbox', () => apiGet<ConversationDto[]>(API_ROUTES.conversations), {
+    maxAgeMs: CACHE_TTL.chatInbox,
+    force: opts?.force,
+  });
 }
 
 export async function createConversationRemote(payload: ConversationCreatePayload): Promise<ConversationDto> {
   return apiPost<ConversationDto>(API_ROUTES.conversations, payload);
 }
 
-export async function getMessagesRemote(conversationId: string, before?: string): Promise<MessageDto[]> {
-  return apiGet<MessageDto[]>(API_ROUTES.messages(conversationId), { params: before ? { before } : undefined });
+export async function getMessagesRemote(
+  conversationId: string,
+  before?: string,
+  opts?: { force?: boolean },
+): Promise<MessageDto[]> {
+  if (before) {
+    return apiGet<MessageDto[]>(API_ROUTES.messages(conversationId), { params: { before } });
+  }
+  return cachedGet(
+    `chat:msgs:${conversationId}`,
+    () => apiGet<MessageDto[]>(API_ROUTES.messages(conversationId)),
+    { maxAgeMs: CACHE_TTL.chatMessages, force: opts?.force },
+  );
 }
 
 export async function sendMessageRemote(conversationId: string, payload: MessageCreatePayload): Promise<MessageDto> {
-  return apiPost<MessageDto>(API_ROUTES.messages(conversationId), payload);
+  const message = await apiPost<MessageDto>(API_ROUTES.messages(conversationId), payload);
+  invalidateCache('chat:inbox');
+  return message;
 }
 
 export async function markConversationReadRemote(conversationId: string): Promise<void> {

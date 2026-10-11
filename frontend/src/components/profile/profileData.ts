@@ -34,10 +34,10 @@ import { resolveOrganizer } from '../ExplorePage/exploreEvents';
    1. DAB UPS (mutual connections)
    ============================================================ */
 
-export type DabUpStatus = 'none' | 'pending' | 'dabbed_up';
+export type DabUpStatus = 'none' | 'pending' | 'incoming' | 'dabbed_up';
 
 // 'connected' kept as a legacy alias for previously stored relationships.
-type StoredDabStatus = 'pending' | 'dabbed_up' | 'connected';
+type StoredDabStatus = 'pending' | 'incoming' | 'dabbed_up' | 'connected' | 'denied';
 
 const DAB_UPS_KEY = 'simsor-dabups-v1';
 export const DAB_UPS_CHANGED_EVENT = 'simsor-dabups-changed';
@@ -59,9 +59,25 @@ function saveDabStore(store: Record<string, StoredDabStatus>): void {
 
 export function getDabUpStatus(userId: string): DabUpStatus {
   const stored = loadDabStore()[userId];
-  if (!stored) return 'none';
+  if (!stored || stored === 'denied') return 'none';
+  if (stored === 'pending' || stored === 'incoming') return stored;
   // Legacy 'connected' is treated as the canonical 'dabbed_up'.
-  return stored === 'pending' ? 'pending' : 'dabbed_up';
+  return 'dabbed_up';
+}
+
+/** Demo-mode inbound request, so the Confirm / Deny flow works offline. */
+export function seedIncomingDabUp(userId: string): void {
+  const store = loadDabStore();
+  if (store[userId]) return;
+  store[userId] = 'incoming';
+  saveDabStore(store);
+}
+
+export function respondToDabUp(userId: string, accept: boolean): void {
+  const store = loadDabStore();
+  if (store[userId] !== 'incoming') return;
+  store[userId] = accept ? 'dabbed_up' : 'denied';
+  saveDabStore(store);
 }
 
 /**
@@ -94,11 +110,13 @@ export function removeDabUp(userId: string): void {
 export function getDabbedUpIds(): string[] {
   if (isBackendEnabled()) return getServerDabbedUpIds();
   const store = loadDabStore();
-  return Object.keys(store).filter((id) => store[id] !== 'pending');
+  return Object.keys(store).filter((id) => store[id] === 'dabbed_up' || store[id] === 'connected');
 }
 
 export function getDabUpsCount(): number {
   if (isBackendEnabled()) {
+    const ids = getDabbedUpIds().length;
+    if (ids > 0) return ids;
     const real = getCachedStats();
     if (real) return real.dabUps;
   }
@@ -169,7 +187,7 @@ function getOwnPosts(): HomeFeedPost[] {
     const viewerId = getCurrentViewerId();
     return getLiveCachedPosts().filter((p) => p.authorId === viewerId);
   }
-  return getOwnPosts();
+  return loadUserPosts();
 }
 
 export type EventsJoinedStats = {
@@ -184,6 +202,20 @@ export type EventsJoinedStats = {
  * Upcoming joins count as "registered", not attended.
  */
 export function getEventsJoinedStats(): EventsJoinedStats {
+  const local = computeJoinedFromPosts();
+  if (isBackendEnabled()) {
+    const real = getCachedStats();
+    if (real) {
+      return {
+        ...local,
+        attendedTotal: real.eventsJoined,
+      };
+    }
+  }
+  return local;
+}
+
+function computeJoinedFromPosts(): EventsJoinedStats {
   const joinedIds = new Set(getJoinedEventIds());
   const posts = getAllKnownPosts();
   const byCategory = new Map<string, number>();
@@ -255,7 +287,7 @@ export function getHostingStats(): HostingStats {
       : events.reduce((sum, e) => sum + e.rating * e.ratingCount, 0) / Math.max(1, ratingCount);
 
   return {
-    hostedTotal: events.length,
+    hostedTotal: isBackendEnabled() ? (getCachedStats()?.eventsHosted ?? events.length) : events.length,
     avgRating: Math.round(avgRating * 10) / 10,
     ratingCount,
     events,
@@ -409,7 +441,9 @@ export function getUserPostsFeed(): HomeFeedPost[] {
    ============================================================ */
 
 export function isOwnProfileUser(userId: string | null | undefined): boolean {
-  return !userId || userId === ME_AUTHOR_ID;
+  if (!userId || userId === ME_AUTHOR_ID) return true;
+  if (userId === getCurrentViewerId()) return true;
+  return false;
 }
 
 function hashUserId(id: string): number {
@@ -443,7 +477,7 @@ export function getMemberHostingStats(userId: string): HostingStats {
       : events.reduce((sum, e) => sum + e.rating * e.ratingCount, 0) / Math.max(1, ratingCount);
 
   return {
-    hostedTotal: events.length,
+    hostedTotal: isBackendEnabled() ? (getCachedStats(userId)?.eventsHosted ?? events.length) : events.length,
     avgRating: Math.round(avgRating * 10) / 10,
     ratingCount,
     events,

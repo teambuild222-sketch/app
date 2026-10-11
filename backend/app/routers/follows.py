@@ -40,8 +40,8 @@ async def follow_user(user_id: str, current_user: CurrentUser, db: DbSession) ->
         await notify_users(
             db,
             [user_id],
-            title="New follower",
-            body=f"{current_user.full_name or current_user.username} started following you",
+            title="New booster",
+            body=f"{current_user.full_name or current_user.username} started boosting you",
             data={"type": "follow", "userId": current_user.id},
         )
 

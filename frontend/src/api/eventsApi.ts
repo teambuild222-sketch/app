@@ -3,6 +3,7 @@
  * Until VITE_API_URL is set, delegates to existing exploreEvents local store.
  */
 import { apiDelete, apiGet, apiPost, isBackendEnabled } from './client';
+import { CACHE_TTL, cachedGet, invalidateCache, readCache } from '../lib/deviceCache';
 import { API_ROUTES, type EventDto } from './types';
 import { loadExploreEvents, type ExploreEvent } from '../components/ExplorePage/exploreEvents';
 
@@ -10,14 +11,26 @@ function toDto(e: ExploreEvent): EventDto {
   return { ...e };
 }
 
+function eventsKey(mainCategory?: string): string {
+  return `events:${mainCategory || 'all'}`;
+}
+
+export function getCachedEvents(mainCategory?: string): EventDto[] {
+  return readCache<EventDto[]>(eventsKey(mainCategory)) ?? [];
+}
+
 export async function listEvents(params?: {
   lat?: number;
   lng?: number;
   radiusKm?: number;
   mainCategory?: string;
+  force?: boolean;
 }): Promise<EventDto[]> {
   if (isBackendEnabled()) {
-    return apiGet<EventDto[]>(API_ROUTES.events, { params });
+    return cachedGet(eventsKey(params?.mainCategory), () => apiGet<EventDto[]>(API_ROUTES.events, { params }), {
+      maxAgeMs: CACHE_TTL.events,
+      force: params?.force,
+    });
   }
   return loadExploreEvents().map(toDto);
 }
@@ -29,7 +42,9 @@ export async function createEventRemote(
   payload: Omit<EventDto, 'id' | 'attendees' | 'organizerId'> & { attendees?: number },
 ): Promise<EventDto> {
   if (isBackendEnabled()) {
-    return apiPost<EventDto>(API_ROUTES.events, payload);
+    const created = await apiPost<EventDto>(API_ROUTES.events, payload);
+    invalidateCache('events:');
+    return created;
   }
   throw new Error('Use publishEvent() while backend is offline');
 }
@@ -37,6 +52,7 @@ export async function createEventRemote(
 export async function deleteEventRemote(eventId: string): Promise<void> {
   if (isBackendEnabled()) {
     await apiDelete(API_ROUTES.eventById(eventId));
+    invalidateCache('events:');
     return;
   }
   throw new Error('Use removeExploreEvent() while backend is offline');

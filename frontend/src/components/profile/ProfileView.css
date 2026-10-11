@@ -347,6 +347,63 @@ html.simsor-mobile-app .profile-page {
   font-size: 12px;
 }
 
+.profile-dab-request {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--home-bw-border, rgba(255, 255, 255, 0.12));
+  background: var(--home-bw-soft, rgba(255, 255, 255, 0.06));
+}
+
+.profile-dab-request + .profile-hero-actions {
+  grid-row: 3;
+}
+
+.profile-dab-request-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--home-bw-fg, #f4f4f5);
+}
+
+.profile-dab-request-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.profile-dab-request-btn {
+  flex: 1;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--home-bw-border, rgba(255, 255, 255, 0.16));
+  background: transparent;
+  color: var(--home-bw-fg, #f4f4f5);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s, opacity 0.15s;
+}
+
+.profile-dab-request-btn--confirm {
+  border-color: transparent;
+  background: var(--home-bw-fg, #f4f4f5);
+  color: var(--home-bw-bg, #0c0c0e);
+}
+
+.profile-dab-request-btn:active {
+  transform: scale(0.97);
+}
+
+.profile-dab-request-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
 .profile-hero-content {
   display: flex;
   flex-direction: column;

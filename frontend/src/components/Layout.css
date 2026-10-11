@@ -1304,6 +1304,167 @@ html[data-theme='light']:has(.simsor-app-shell.home-active) {
   overflow: hidden;
 }
 
+/* ---------- Notifications full page (replaces slide-up drawer on Layout) ---------- */
+.notifications-page-view {
+  --notif-accent: #e4e4e7;
+  --notif-surface: rgba(255, 255, 255, 0.05);
+  --notif-surface-hover: rgba(255, 255, 255, 0.08);
+  --notif-stroke: rgba(255, 255, 255, 0.07);
+  --notif-stroke-strong: rgba(255, 255, 255, 0.11);
+  --notif-bg: #0c0c0e;
+
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  background: #0c0c0e;
+  position: relative;
+  isolation: isolate;
+}
+
+.notifications-page-header,
+.notifications-page-scroll {
+  position: relative;
+  z-index: 1;
+}
+
+.notifications-page-header {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: calc(12px + var(--phone-status-offset, env(safe-area-inset-top, 0px))) 16px 12px;
+  background: #0c0c0e;
+}
+
+.notifications-page-back {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--notif-stroke-strong);
+  background: var(--notif-surface);
+  color: var(--text-primary, #f4f4f5);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+}
+
+.notifications-page-back:hover {
+  background: var(--notif-surface-hover);
+}
+
+.notifications-page-back:active {
+  transform: scale(0.94);
+}
+
+.notifications-page-heading {
+  min-width: 0;
+  text-align: left;
+}
+
+.notifications-page-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  color: #fafafa;
+}
+
+.notifications-page-subtitle {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--text-tertiary, #a1a1aa);
+}
+
+.notifications-page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.notifications-mark-read-btn {
+  border: 1px solid var(--notif-stroke-strong);
+  background: transparent;
+  color: var(--notif-accent);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 9999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.notifications-mark-read-btn:hover {
+  background: var(--notif-surface-hover);
+  color: #fafafa;
+}
+
+.notifications-page-unread-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 9999px;
+  background: rgba(255, 45, 85, 0.14);
+  color: #ff375f;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 0 12px rgba(255, 45, 85, 0.2);
+}
+
+.notifications-page-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 4px 16px calc(14px + env(safe-area-inset-bottom, 0px) + 76px);
+  -webkit-overflow-scrolling: touch;
+}
+
+.notifications-page-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.notifications-page-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+}
+
+.home-active.notifications-active .simsor-main-panel {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0;
+  gap: 0;
+}
+
+.home-active .simsor-layout-grid:has(.notifications-page-view),
+.mobile-app-mode .home-active .simsor-layout-grid:has(.notifications-page-view),
+html.simsor-mobile-app .home-active .simsor-layout-grid:has(.notifications-page-view) {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.home-active.notifications-active .notifications-page-view {
+  flex: 1;
+  min-height: 0;
+}
+
 /* Keep home / discover / chat / profile scroll clearance aligned */
 .home-active .simsor-main-panel {
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
